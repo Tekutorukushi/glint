@@ -128,6 +128,8 @@ const check = (name, ok, extra = '') => {
   check('stuck bonus not recorded', has('points', 'stuckbonus') === 0);
   check('stuck moment not recorded', has('moments', 'momentstuck') === 0);
   console.log('badge:', await sw.evaluate(() => chrome.action.getBadgeText({})));
+  const badges = await sw.evaluate(() => [0, 50, 999, 1000, 1999, 12400, 99999, 250000].map(shortNumber));
+  check('badge text fits in 3 characters', JSON.stringify(badges) === '["0","50","999","1k","1k","12k","99k","99k"]', badges.join(','));
 
   // self-check: the stuck bonus shows up as a notice in the popup, and can be dismissed
   const health = await sw.evaluate(async () => (await chrome.storage.session.get('health')).health || {});

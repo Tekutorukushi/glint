@@ -93,10 +93,11 @@ async function notify(claim) {
 }
 
 // ---- badge: points collected today ----
+// At most 3 characters so the badge covers as little of the icon as possible:
+// 50, 850, 1k, 12k. A day's bonuses realistically never reach 100k, so it stops at 99k.
 function shortNumber(n) {
-  if (n >= 1e6) return `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}m`;
-  if (n >= 1e3) return `${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1)}k`;
-  return String(n);
+  n = Math.max(0, Math.floor(n || 0));
+  return n < 1000 ? String(n) : `${Math.min(Math.floor(n / 1000), 99)}k`;
 }
 
 async function updateBadge(stats) {
