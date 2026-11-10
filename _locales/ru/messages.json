@@ -1,0 +1,200 @@
+{
+  "extName": {
+    "message": "Glint: баллы, дропы и моменты для Twitch"
+  },
+  "extDescription": {
+    "message": "Собирает баллы канала, моменты и дропы на Twitch, не даёт стриму встать на паузу в фоне и показывает, сколько вы заработали."
+  },
+  "statusOn": {
+    "message": "Включено"
+  },
+  "statusPaused": {
+    "message": "На паузе"
+  },
+  "statusLinePaused": {
+    "message": "На паузе, ничего не собирается"
+  },
+  "statusLineIdle": {
+    "message": "Откройте стрим на Twitch, и Glint начнёт собирать"
+  },
+  "statusLineWatching": {
+    "message": "Собираю на каналах: $LIST$",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "shroud, xqc"
+      }
+    }
+  },
+  "todayLabel": {
+    "message": "Баллов сегодня"
+  },
+  "pointsUnit": {
+    "message": "баллов"
+  },
+  "todayExtra": {
+    "message": "Моментов: $M$, дропов: $D$",
+    "placeholders": {
+      "m": {
+        "content": "$1"
+      },
+      "d": {
+        "content": "$2"
+      }
+    }
+  },
+  "chartTitle": {
+    "message": "Баллы за последние 7 дней"
+  },
+  "channelsTitle": {
+    "message": "Лучшие каналы"
+  },
+  "totalLine": {
+    "message": "всего $N$",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      }
+    }
+  },
+  "channelsEmpty": {
+    "message": "Здесь появятся собранные баллы по каналам."
+  },
+  "filterAll": {
+    "message": "Всё"
+  },
+  "filterPoints": {
+    "message": "Баллы"
+  },
+  "filterMoments": {
+    "message": "Моменты"
+  },
+  "filterDrops": {
+    "message": "Дропы"
+  },
+  "historyEmpty": {
+    "message": "Пока ничего не собрано. Оставьте стрим открытым и загляните позже."
+  },
+  "dayToday": {
+    "message": "Сегодня"
+  },
+  "dayYesterday": {
+    "message": "Вчера"
+  },
+  "eventDrop": {
+    "message": "Дроп получен"
+  },
+  "eventMoment": {
+    "message": "Момент получен"
+  },
+  "groupCollect": {
+    "message": "Собирать автоматически"
+  },
+  "setPoints": {
+    "message": "Бонусные баллы канала"
+  },
+  "setPointsHint": {
+    "message": "Нажимает на сундук с бонусом, как только он появится"
+  },
+  "setMoments": {
+    "message": "Моменты"
+  },
+  "setMomentsHint": {
+    "message": "Забирает памятные моменты во время стрима"
+  },
+  "setDrops": {
+    "message": "Дропы"
+  },
+  "setDropsHint": {
+    "message": "Раз в 15 минут проверяет инвентарь в фоновой вкладке, пока открыт стрим"
+  },
+  "groupPlayer": {
+    "message": "Плеер"
+  },
+  "setKeepAlive": {
+    "message": "Не ставить на паузу в фоне"
+  },
+  "setKeepAliveHint": {
+    "message": "Twitch не будет останавливать стрим и снижать качество, когда вы на другой вкладке"
+  },
+  "setRecover": {
+    "message": "Восстанавливать после ошибок"
+  },
+  "setRecoverHint": {
+    "message": "Нажимает «Повторить», а если ошибка повторяется, перезагружает страницу"
+  },
+  "setMature": {
+    "message": "Пропускать предупреждение 18+"
+  },
+  "setMatureHint": {
+    "message": "Подтверждает предупреждение перед некоторыми стримами"
+  },
+  "groupNotify": {
+    "message": "Уведомления"
+  },
+  "setToasts": {
+    "message": "Подсказки на странице Twitch"
+  },
+  "setToastsHint": {
+    "message": "Небольшая плашка в углу, когда что-то собрано"
+  },
+  "setNotifyDrops": {
+    "message": "Системное уведомление о дропах"
+  },
+  "setNotifyMoments": {
+    "message": "Системное уведомление о моментах"
+  },
+  "setBadge": {
+    "message": "Счётчик баллов на значке"
+  },
+  "setBadgeHint": {
+    "message": "Показывает, сколько баллов собрано сегодня"
+  },
+  "groupData": {
+    "message": "Ваши данные"
+  },
+  "exportData": {
+    "message": "Скачать в JSON"
+  },
+  "resetStats": {
+    "message": "Сбросить статистику"
+  },
+  "resetConfirm": {
+    "message": "Нажмите ещё раз"
+  },
+  "resetDone": {
+    "message": "Статистика сброшена"
+  },
+  "versionLine": {
+    "message": "Glint $V$. Всё хранится только в вашем браузере: без серверов и слежки.",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "tabOverview": {
+    "message": "Обзор"
+  },
+  "tabHistory": {
+    "message": "История"
+  },
+  "tabSettings": {
+    "message": "Настройки"
+  },
+  "toastPoints": {
+    "message": "баллов"
+  },
+  "toastMoment": {
+    "message": "Момент получен"
+  },
+  "toastDrop": {
+    "message": "Дроп получен"
+  },
+  "notifDropTitle": {
+    "message": "Дроп получен"
+  },
+  "notifMomentTitle": {
+    "message": "Момент получен"
+  }
+}

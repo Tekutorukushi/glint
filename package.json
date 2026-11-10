@@ -1,0 +1,15 @@
+{
+  "name": "glint",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dev tooling for the Glint browser extension (the extension itself has no build step)",
+  "scripts": {
+    "test": "node tools/e2e.js",
+    "icons": "node tools/icons.js",
+    "check": "for f in src/*.js src/*/*.js tools/*.js; do node --check \"$f\" || exit 1; done",
+    "pack": "python3 tools/pack.py"
+  },
+  "devDependencies": {
+    "playwright-core": "1.56.1"
+  }
+}

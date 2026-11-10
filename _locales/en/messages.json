@@ -1,0 +1,200 @@
+{
+  "extName": {
+    "message": "Glint: channel points, drops and moments for Twitch"
+  },
+  "extDescription": {
+    "message": "Collects Twitch channel points, moments and drops for you, keeps background streams playing and shows what you earned."
+  },
+  "statusOn": {
+    "message": "On"
+  },
+  "statusPaused": {
+    "message": "Paused"
+  },
+  "statusLinePaused": {
+    "message": "Paused. Nothing is being collected."
+  },
+  "statusLineIdle": {
+    "message": "Open a stream on Twitch and Glint will start collecting"
+  },
+  "statusLineWatching": {
+    "message": "Collecting on $LIST$",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "shroud, xqc"
+      }
+    }
+  },
+  "todayLabel": {
+    "message": "Points today"
+  },
+  "pointsUnit": {
+    "message": "points"
+  },
+  "todayExtra": {
+    "message": "Moments: $M$, drops: $D$",
+    "placeholders": {
+      "m": {
+        "content": "$1"
+      },
+      "d": {
+        "content": "$2"
+      }
+    }
+  },
+  "chartTitle": {
+    "message": "Points over the last 7 days"
+  },
+  "channelsTitle": {
+    "message": "Top channels"
+  },
+  "totalLine": {
+    "message": "$N$ in total",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      }
+    }
+  },
+  "channelsEmpty": {
+    "message": "Points you collect will show up here, grouped by channel."
+  },
+  "filterAll": {
+    "message": "All"
+  },
+  "filterPoints": {
+    "message": "Points"
+  },
+  "filterMoments": {
+    "message": "Moments"
+  },
+  "filterDrops": {
+    "message": "Drops"
+  },
+  "historyEmpty": {
+    "message": "Nothing collected yet. Keep a stream open and check back later."
+  },
+  "dayToday": {
+    "message": "Today"
+  },
+  "dayYesterday": {
+    "message": "Yesterday"
+  },
+  "eventDrop": {
+    "message": "Drop claimed"
+  },
+  "eventMoment": {
+    "message": "Moment claimed"
+  },
+  "groupCollect": {
+    "message": "Collect automatically"
+  },
+  "setPoints": {
+    "message": "Channel points bonus"
+  },
+  "setPointsHint": {
+    "message": "Clicks the bonus chest as soon as it appears"
+  },
+  "setMoments": {
+    "message": "Moments"
+  },
+  "setMomentsHint": {
+    "message": "Claims moment badges during streams"
+  },
+  "setDrops": {
+    "message": "Drops"
+  },
+  "setDropsHint": {
+    "message": "Every 15 minutes checks your inventory in a background tab while a stream is open"
+  },
+  "groupPlayer": {
+    "message": "Player"
+  },
+  "setKeepAlive": {
+    "message": "Keep playing in background tabs"
+  },
+  "setKeepAliveHint": {
+    "message": "Twitch won't pause or downgrade the stream when you switch tabs"
+  },
+  "setRecover": {
+    "message": "Recover from player errors"
+  },
+  "setRecoverHint": {
+    "message": "Presses retry on errors, reloads the page if they keep coming back"
+  },
+  "setMature": {
+    "message": "Skip the mature content warning"
+  },
+  "setMatureHint": {
+    "message": "Confirms the warning shown before some streams"
+  },
+  "groupNotify": {
+    "message": "Notifications"
+  },
+  "setToasts": {
+    "message": "Pop-ups on the Twitch page"
+  },
+  "setToastsHint": {
+    "message": "A small note in the corner when something is collected"
+  },
+  "setNotifyDrops": {
+    "message": "System notification for drops"
+  },
+  "setNotifyMoments": {
+    "message": "System notification for moments"
+  },
+  "setBadge": {
+    "message": "Points counter on the icon"
+  },
+  "setBadgeHint": {
+    "message": "Shows how many points were collected today"
+  },
+  "groupData": {
+    "message": "Your data"
+  },
+  "exportData": {
+    "message": "Export to JSON"
+  },
+  "resetStats": {
+    "message": "Reset statistics"
+  },
+  "resetConfirm": {
+    "message": "Click again to reset"
+  },
+  "resetDone": {
+    "message": "Statistics reset"
+  },
+  "versionLine": {
+    "message": "Glint $V$. Everything stays in your browser: no servers, no tracking.",
+    "placeholders": {
+      "v": {
+        "content": "$1"
+      }
+    }
+  },
+  "tabOverview": {
+    "message": "Overview"
+  },
+  "tabHistory": {
+    "message": "History"
+  },
+  "tabSettings": {
+    "message": "Settings"
+  },
+  "toastPoints": {
+    "message": "points"
+  },
+  "toastMoment": {
+    "message": "Moment claimed"
+  },
+  "toastDrop": {
+    "message": "Drop claimed"
+  },
+  "notifDropTitle": {
+    "message": "Drop claimed"
+  },
+  "notifMomentTitle": {
+    "message": "Moment claimed"
+  }
+}

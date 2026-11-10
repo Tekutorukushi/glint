@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glint</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg class="brand-coin" viewBox="0 0 28 28" aria-hidden="true">
+        <circle cx="14" cy="14" r="13" class="coin-face"/>
+        <circle cx="14" cy="14" r="10.5" class="coin-rim"/>
+        <path d="M14 6.5l1.8 4.6 4.9.4-3.8 3.1 1.2 4.8L14 16.7l-4.1 2.7 1.2-4.8-3.8-3.1 4.9-.4z" class="coin-glyph"/>
+      </svg>
+      <span class="wordmark">Glint</span>
+    </div>
+    <label class="master">
+      <span class="master-label" id="masterLabel"></span>
+      <input type="checkbox" id="masterSwitch" role="switch">
+      <span class="switch" aria-hidden="true"></span>
+    </label>
+  </header>
+
+  <p class="status" id="status"></p>
+
+  <main>
+    <!-- Overview -->
+    <section class="panel" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
+      <div class="today">
+        <p class="today-label" data-i18n="todayLabel"></p>
+        <p class="today-value"><span id="todayPoints">0</span><span class="today-unit" data-i18n="pointsUnit"></span></p>
+        <p class="today-extra" id="todayExtra"></p>
+      </div>
+
+      <figure class="chart">
+        <figcaption data-i18n="chartTitle"></figcaption>
+        <div class="chart-plot" id="chart"></div>
+        <div class="tooltip" id="tooltip" role="status" hidden></div>
+      </figure>
+
+      <div class="channels">
+        <div class="section-head">
+          <h2 data-i18n="channelsTitle"></h2>
+          <span class="muted" id="totalPoints"></span>
+        </div>
+        <ol class="channel-list" id="channelList"></ol>
+        <p class="empty" id="channelsEmpty" data-i18n="channelsEmpty" hidden></p>
+      </div>
+    </section>
+
+    <!-- History -->
+    <section class="panel" id="panel-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+      <div class="segmented" role="radiogroup" id="historyFilter">
+        <button role="radio" aria-checked="true" data-kind="all" data-i18n="filterAll"></button>
+        <button role="radio" aria-checked="false" data-kind="points" data-i18n="filterPoints"></button>
+        <button role="radio" aria-checked="false" data-kind="moments" data-i18n="filterMoments"></button>
+        <button role="radio" aria-checked="false" data-kind="drops" data-i18n="filterDrops"></button>
+      </div>
+      <div id="historyList" class="history"></div>
+      <p class="empty" id="historyEmpty" data-i18n="historyEmpty" hidden></p>
+    </section>
+
+    <!-- Settings -->
+    <section class="panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+      <div class="group">
+        <h2 data-i18n="groupCollect"></h2>
+        <label class="row"><span><b data-i18n="setPoints"></b><small data-i18n="setPointsHint"></small></span><input type="checkbox" role="switch" data-setting="points"><i class="switch"></i></label>
+        <label class="row"><span><b data-i18n="setMoments"></b><small data-i18n="setMomentsHint"></small></span><input type="checkbox" role="switch" data-setting="moments"><i class="switch"></i></label>
+        <label class="row"><span><b data-i18n="setDrops"></b><small data-i18n="setDropsHint"></small></span><input type="checkbox" role="switch" data-setting="drops"><i class="switch"></i></label>
+      </div>
+      <div class="group">
+        <h2 data-i18n="groupPlayer"></h2>
+        <label class="row"><span><b data-i18n="setKeepAlive"></b><small data-i18n="setKeepAliveHint"></small></span><input type="checkbox" role="switch" data-setting="keepAlive"><i class="switch"></i></label>
+        <label class="row"><span><b data-i18n="setRecover"></b><small data-i18n="setRecoverHint"></small></span><input type="checkbox" role="switch" data-setting="autoRecover"><i class="switch"></i></label>
+        <label class="row"><span><b data-i18n="setMature"></b><small data-i18n="setMatureHint"></small></span><input type="checkbox" role="switch" data-setting="matureGate"><i class="switch"></i></label>
+      </div>
+      <div class="group">
+        <h2 data-i18n="groupNotify"></h2>
+        <label class="row"><span><b data-i18n="setToasts"></b><small data-i18n="setToastsHint"></small></span><input type="checkbox" role="switch" data-setting="toasts"><i class="switch"></i></label>
+        <label class="row"><span><b data-i18n="setNotifyDrops"></b></span><input type="checkbox" role="switch" data-setting="notifyDrops"><i class="switch"></i></label>
+        <label class="row"><span><b data-i18n="setNotifyMoments"></b></span><input type="checkbox" role="switch" data-setting="notifyMoments"><i class="switch"></i></label>
+        <label class="row"><span><b data-i18n="setBadge"></b><small data-i18n="setBadgeHint"></small></span><input type="checkbox" role="switch" data-setting="badge"><i class="switch"></i></label>
+      </div>
+      <div class="group">
+        <h2 data-i18n="groupData"></h2>
+        <div class="actions">
+          <button class="btn" id="exportBtn" data-i18n="exportData"></button>
+          <button class="btn btn-danger" id="resetBtn" data-i18n="resetStats"></button>
+        </div>
+        <p class="footnote" id="version"></p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-overview" aria-controls="panel-overview" aria-selected="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      <span data-i18n="tabOverview"></span>
+    </button>
+    <button role="tab" id="tab-history" aria-controls="panel-history" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span data-i18n="tabHistory"></span>
+    </button>
+    <button role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+      <span data-i18n="tabSettings"></span>
+    </button>
+  </nav>
+
+  <script src="../shared/defaults.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

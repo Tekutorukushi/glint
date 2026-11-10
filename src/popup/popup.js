@@ -1,0 +1,358 @@
+/* Glint popup logic. */
+(() => {
+  'use strict';
+  const { DEFAULT_SETTINGS, dayKey, emptyStats } = GLINT;
+  const t = (key, subs) => chrome.i18n.getMessage(key, subs) || key;
+  const $ = id => document.getElementById(id);
+  const locale = chrome.i18n.getUILanguage();
+  const fmt = n => Number(n || 0).toLocaleString(locale);
+
+  let settings = { ...DEFAULT_SETTINGS };
+  let stats = emptyStats();
+  let history = [];
+  let historyKind = 'all';
+  let lastToday = null;
+
+  // ------------------------------------------------------------ i18n
+  document.documentElement.lang = locale.split('-')[0];
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $('version').textContent = t('versionLine', [chrome.runtime.getManifest().version]);
+
+  // ------------------------------------------------------------ tabs
+  const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+  function selectTab(tab) {
+    tabs.forEach(b => {
+      const on = b === tab;
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+      $(b.getAttribute('aria-controls')).hidden = !on;
+    });
+    try { localStorage.setItem('glint-tab', tab.id); } catch (e) { /* ignore */ }
+  }
+  tabs.forEach((b, i) => {
+    b.addEventListener('click', () => selectTab(b));
+    b.addEventListener('keydown', e => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      const next = tabs[(i + d + tabs.length) % tabs.length];
+      selectTab(next);
+      next.focus();
+    });
+  });
+  try {
+    const saved = localStorage.getItem('glint-tab');
+    saved && $(saved) && selectTab($(saved));
+  } catch (e) { /* ignore */ }
+
+  // ------------------------------------------------------------ settings
+  const master = $('masterSwitch');
+  const toggles = Array.from(document.querySelectorAll('[data-setting]'));
+
+  function renderSettings() {
+    master.checked = settings.enabled;
+    $('masterLabel').textContent = t(settings.enabled ? 'statusOn' : 'statusPaused');
+    document.body.classList.toggle('off', !settings.enabled);
+    toggles.forEach(input => { input.checked = !!settings[input.dataset.setting]; });
+  }
+
+  function saveSetting(key, value) {
+    settings = { ...settings, [key]: value };
+    chrome.storage.sync.set({ settings });
+    renderSettings();
+    renderStatus();
+  }
+
+  master.addEventListener('change', () => saveSetting('enabled', master.checked));
+  toggles.forEach(input => input.addEventListener('change', () => saveSetting(input.dataset.setting, input.checked)));
+
+  // ------------------------------------------------------------ status line
+  async function renderStatus() {
+    const el = $('status');
+    if (!settings.enabled) {
+      el.className = 'status';
+      el.textContent = t('statusLinePaused');
+      return;
+    }
+    const tabsOpen = await chrome.tabs.query({ url: 'https://www.twitch.tv/*' });
+    const channels = [...new Set(tabsOpen
+      .map(tab => {
+        try {
+          const seg = new URL(tab.url).pathname.split('/').filter(Boolean);
+          const name = seg[0] === 'popout' ? seg[1] : seg[0];
+          return name && /^[a-z0-9_]{2,25}$/i.test(name) && !['directory', 'drops', 'settings', 'videos', 'search'].includes(name) ? name : '';
+        } catch (e) { return ''; }
+      })
+      .filter(Boolean))];
+    if (!channels.length) {
+      el.className = 'status';
+      el.textContent = t('statusLineIdle');
+      return;
+    }
+    el.className = 'status live';
+    el.textContent = t('statusLineWatching', [channels.join(', ')]);
+    el.title = channels.join(', ');
+  }
+
+  // ------------------------------------------------------------ overview
+  function renderToday() {
+    const today = stats.days[dayKey()] || { points: 0, moments: 0, drops: 0 };
+    const value = $('todayPoints');
+    value.textContent = fmt(today.points);
+    if (lastToday != null && today.points > lastToday) {
+      const wrap = value.parentElement;
+      wrap.classList.remove('bump');
+      void wrap.offsetWidth;
+      wrap.classList.add('bump');
+    }
+    lastToday = today.points;
+    $('todayExtra').textContent = t('todayExtra', [fmt(today.moments || 0), fmt(today.drops || 0)]);
+    $('totalPoints').textContent = t('totalLine', [fmt(stats.total.points)]);
+  }
+
+  function lastDays(n) {
+    const out = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setHours(12, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      const key = dayKey(d.getTime());
+      out.push({ key, date: d, value: (stats.days[key] && stats.days[key].points) || 0, isToday: i === 0 });
+    }
+    return out;
+  }
+
+  function niceMax(v) {
+    if (v <= 0) return 100;
+    const p = Math.pow(10, Math.floor(Math.log10(v)));
+    return [1, 2, 2.5, 5, 10].map(m => m * p).find(m => m >= v);
+  }
+
+  function renderChart() {
+    const days = lastDays(7);
+    const W = 328, H = 150, top = 34, bottom = 22, plotH = H - top - bottom; // headroom for the tooltip
+    const max = niceMax(Math.max(...days.map(d => d.value)));
+    const slot = W / days.length;
+    const barW = 18;
+    const dayFmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    const fullFmt = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', t('chartTitle'));
+
+    // recessive gridlines: baseline + half + max
+    [0, 0.5, 1].forEach(f => {
+      const y = top + plotH - plotH * f;
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('class', 'gridline');
+      line.setAttribute('x1', 0); line.setAttribute('x2', W);
+      line.setAttribute('y1', y); line.setAttribute('y2', y);
+      svg.appendChild(line);
+    });
+
+    const tip = $('tooltip');
+    days.forEach((d, i) => {
+      const g = document.createElementNS(ns, 'g');
+      g.setAttribute('class', 'col');
+      const cx = slot * i + slot / 2;
+      const h = d.value ? Math.max(4, (d.value / max) * plotH) : 2;
+      const y = top + plotH - h;
+      const r = d.value ? Math.min(4, h / 2) : 1;
+      const path = document.createElementNS(ns, 'path');
+      const x0 = cx - barW / 2, x1 = cx + barW / 2, yb = top + plotH;
+      // rounded data-end on top, square on the baseline
+      path.setAttribute('d', `M${x0},${yb} V${y + r} Q${x0},${y} ${x0 + r},${y} H${x1 - r} Q${x1},${y} ${x1},${y + r} V${yb} Z`);
+      path.setAttribute('class', d.value ? 'bar' : 'bar-zero');
+      g.appendChild(path);
+
+      const label = document.createElementNS(ns, 'text');
+      label.setAttribute('class', d.isToday ? 'axis today' : 'axis');
+      label.setAttribute('x', cx);
+      label.setAttribute('y', H - 6);
+      label.setAttribute('text-anchor', 'middle');
+      label.textContent = dayFmt.format(d.date);
+      g.appendChild(label);
+
+      const hit = document.createElementNS(ns, 'rect');
+      hit.setAttribute('class', 'hit');
+      hit.setAttribute('x', slot * i); hit.setAttribute('y', 0);
+      hit.setAttribute('width', slot); hit.setAttribute('height', H);
+      hit.setAttribute('tabindex', '0');
+      const text = `${fullFmt.format(d.date)}: ${fmt(d.value)} ${t('pointsUnit')}`;
+      hit.setAttribute('aria-label', text);
+      const show = () => {
+        g.classList.add('active');
+        tip.innerHTML = '';
+        const b = document.createElement('b');
+        b.textContent = fmt(d.value);
+        tip.append(b, ` ${t('pointsUnit')}, ${fullFmt.format(d.date)}`);
+        tip.hidden = false;
+        const plot = $('chart').getBoundingClientRect();
+        const fig = tip.parentElement.getBoundingClientRect();
+        const scale = plot.width / W;
+        let left = plot.left - fig.left + cx * scale;
+        const half = tip.offsetWidth / 2;
+        left = Math.min(Math.max(left, half), fig.width - half);
+        tip.style.left = `${left}px`;
+        tip.style.top = `${plot.top - fig.top + y * scale - 6}px`;
+      };
+      const hide = () => { g.classList.remove('active'); tip.hidden = true; };
+      hit.addEventListener('pointerenter', show);
+      hit.addEventListener('pointerleave', hide);
+      hit.addEventListener('focus', show);
+      hit.addEventListener('blur', hide);
+      g.appendChild(hit);
+      svg.appendChild(g);
+    });
+    $('chart').replaceChildren(svg);
+  }
+
+  function renderChannels() {
+    const list = Object.entries(stats.channels)
+      .map(([name, c]) => ({ name, points: c.points || 0, last: c.last || 0 }))
+      .filter(c => c.points > 0)
+      .sort((a, b) => b.points - a.points)
+      .slice(0, 5);
+    const ol = $('channelList');
+    ol.replaceChildren();
+    $('channelsEmpty').hidden = list.length > 0;
+    const max = list.length ? list[0].points : 1;
+    list.forEach(c => {
+      const li = document.createElement('li');
+      li.className = 'channel';
+      const avatar = document.createElement('span');
+      avatar.className = 'avatar';
+      avatar.textContent = c.name.slice(0, 1).toUpperCase();
+      const a = document.createElement('a');
+      a.href = `https://www.twitch.tv/${c.name}`;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = c.name;
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = fmt(c.points);
+      const meter = document.createElement('span');
+      meter.className = 'meter';
+      const fill = document.createElement('i');
+      fill.style.width = `${Math.max(2, (c.points / max) * 100)}%`;
+      meter.appendChild(fill);
+      li.append(avatar, a, num, meter);
+      ol.appendChild(li);
+    });
+  }
+
+  // ------------------------------------------------------------ history
+  const ICONS = {
+    points: '<path class="mark" d="M12 6.5l1.5 3.6 3.9.3-3 2.5.9 3.8L12 14.6l-3.3 2.1.9-3.8-3-2.5 3.9-.3z"/>',
+    moments: '<rect class="mark" x="7" y="7" width="10" height="10" rx="2"/><circle class="mark" cx="12" cy="12" r="1.6"/>',
+    drops: '<path class="mark" d="M12 6c2.4 3 3.8 5.1 3.8 6.9a3.8 3.8 0 0 1-7.6 0C8.2 11.1 9.6 9 12 6z"/>'
+  };
+
+  function renderHistory() {
+    const box = $('historyList');
+    box.replaceChildren();
+    const items = history.filter(h => historyKind === 'all' || h.kind === historyKind);
+    $('historyEmpty').hidden = items.length > 0;
+    const dayFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' });
+    const timeFmt = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' });
+    const todayK = dayKey();
+    const yesterdayK = dayKey(Date.now() - 864e5);
+    let currentDay = '';
+    items.slice(0, 150).forEach(h => {
+      const k = dayKey(h.at);
+      if (k !== currentDay) {
+        currentDay = k;
+        const h3 = document.createElement('h3');
+        h3.textContent = k === todayK ? t('dayToday') : k === yesterdayK ? t('dayYesterday') : dayFmt.format(h.at);
+        box.appendChild(h3);
+      }
+      const row = document.createElement('div');
+      row.className = 'event';
+      row.innerHTML = `<svg class="kind-icon" viewBox="0 0 24 24" aria-hidden="true"><circle class="face" cx="12" cy="12" r="12"/>${ICONS[h.kind] || ''}</svg><div class="what"><b></b><small></small></div><time></time>`;
+      const title = h.kind === 'points'
+        ? `${h.approx ? '≈' : '+'}${fmt(h.amount)} ${t('pointsUnit')}`
+        : t(h.kind === 'drops' ? 'eventDrop' : 'eventMoment');
+      row.querySelector('b').textContent = title;
+      row.querySelector('small').textContent = [h.title, h.channel].filter(Boolean).join(', ') || 'Twitch';
+      const time = row.querySelector('time');
+      time.dateTime = new Date(h.at).toISOString();
+      time.textContent = timeFmt.format(h.at);
+      box.appendChild(row);
+    });
+  }
+
+  const filterButtons = Array.from(document.querySelectorAll('#historyFilter button'));
+  filterButtons.forEach(b => b.addEventListener('click', () => {
+    historyKind = b.dataset.kind;
+    filterButtons.forEach(x => x.setAttribute('aria-checked', String(x === b)));
+    renderHistory();
+  }));
+
+  // ------------------------------------------------------------ data actions
+  $('exportBtn').addEventListener('click', async () => {
+    const data = await chrome.storage.local.get(['stats', 'history']);
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), ...data }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `glint-${dayKey()}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  });
+
+  const resetBtn = $('resetBtn');
+  let resetArmed = null;
+  resetBtn.addEventListener('click', async () => {
+    if (!resetArmed) {
+      resetBtn.classList.add('confirm');
+      resetBtn.textContent = t('resetConfirm');
+      resetArmed = setTimeout(() => {
+        resetArmed = null;
+        resetBtn.classList.remove('confirm');
+        resetBtn.textContent = t('resetStats');
+      }, 4000);
+      return;
+    }
+    clearTimeout(resetArmed);
+    resetArmed = null;
+    await chrome.storage.local.set({ stats: emptyStats(), history: [] });
+    resetBtn.classList.remove('confirm');
+    resetBtn.textContent = t('resetDone');
+    setTimeout(() => { resetBtn.textContent = t('resetStats'); }, 2000);
+  });
+
+  // ------------------------------------------------------------ data load
+  function renderAll() {
+    renderSettings();
+    renderToday();
+    renderChart();
+    renderChannels();
+    renderHistory();
+    renderStatus();
+  }
+
+  Promise.all([chrome.storage.sync.get('settings'), chrome.storage.local.get(['stats', 'history'])])
+    .then(([sync, local]) => {
+      settings = { ...DEFAULT_SETTINGS, ...(sync.settings || {}) };
+      stats = { ...emptyStats(), ...(local.stats || {}) };
+      history = local.history || [];
+      renderAll();
+    });
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync' && changes.settings) {
+      settings = { ...DEFAULT_SETTINGS, ...(changes.settings.newValue || {}) };
+      renderSettings();
+      renderStatus();
+    }
+    if (area === 'local' && (changes.stats || changes.history)) {
+      if (changes.stats) stats = { ...emptyStats(), ...(changes.stats.newValue || {}) };
+      if (changes.history) history = changes.history.newValue || [];
+      renderToday();
+      renderChart();
+      renderChannels();
+      renderHistory();
+    }
+  });
+
+})();
