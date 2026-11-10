@@ -253,6 +253,19 @@ const check = (name, ok, extra = '') => {
     await p.waitForTimeout(400);
     const inHistory = await p.locator('.event-pic .avatar img.loaded').count();
     await p.screenshot({ path: `${out}/history-avatars.png` });
+    // a claim rebuilds the lists: already loaded avatars must appear at once, not fade in again
+    await sw.evaluate(async () => { const { stats } = await chrome.storage.local.get('stats'); stats.total.points += 1; await chrome.storage.local.set({ stats }); });
+    await p.click('#tab-overview');
+    const blinking = await p.evaluate(() => [...document.querySelectorAll('.avatar img')]
+      .filter(i => !(i.classList.contains('loaded') && i.classList.contains('instant'))).length);
+    check('rebuilt lists show loaded avatars at once (no blink)', blinking === 0, `fading again: ${blinking}`);
+    // a different picture for a channel seen today is ignored (at most one change a day)
+    const kept = await sw.evaluate(async () => {
+      recordAvatar('shroud', 'https://static-cdn.jtvnw.net/jtv_user_pictures/zzz-profile_image-70x70.png');
+      await writeChain;
+      return (await chrome.storage.local.get('avatars')).avatars.shroud.url;
+    });
+    check('avatar changes at most once a day', kept.includes('/abc-profile_image'), kept);
     // switched off: letters only, nothing loaded
     await sw.evaluate(async () => { const { settings } = await chrome.storage.sync.get('settings'); await chrome.storage.sync.set({ settings: { ...settings, avatars: false } }); });
     await p.waitForTimeout(300);

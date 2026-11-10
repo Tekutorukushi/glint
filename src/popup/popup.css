@@ -269,6 +269,7 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
   transition: opacity var(--slow) var(--ease);
 }
 .avatar img.loaded { opacity: 1; }
+.avatar img.instant { transition: none; }
 .channel a { color: var(--ink); text-decoration: none; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .channel a:hover { text-decoration: underline; text-underline-offset: 2px; }
 .channel .num { font-variant-numeric: tabular-nums; color: var(--ink-2); }

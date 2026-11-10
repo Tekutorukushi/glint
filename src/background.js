@@ -59,13 +59,15 @@ function recordClaim(claim) {
 
 // ---- channel avatars: storage.local.avatars = { name: {url, at} } ----
 const AVATARS_MAX = 500;
+const AVATAR_REFRESH_MS = 864e5; // a day
 
 function recordAvatar(channel, url) {
   writeChain = writeChain.then(async () => {
     const { avatars = {} } = await chrome.storage.local.get('avatars');
     const old = avatars[channel];
-    // the same picture seen again: refresh the timestamp at most once a day
-    if (old && old.url === url && Date.now() - old.at < 864e5) return;
+    // A known channel is updated at most once a day: that refreshes the timestamp and picks
+    // up a new picture, without flipping between pictures if Twitch pages disagree.
+    if (old && Date.now() - old.at < AVATAR_REFRESH_MS) return;
     avatars[channel] = { url, at: Date.now() };
     const names = Object.keys(avatars);
     if (names.length > AVATARS_MAX) {

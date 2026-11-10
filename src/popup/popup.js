@@ -336,6 +336,9 @@
   // ------------------------------------------------------------ avatars
   // A circle with the channel's first letter; the Twitch avatar, if known, fades in on top.
   // If the picture can't load (offline, renamed), the letter simply stays.
+  // Lists are rebuilt on every claim, so a picture that has loaded once is shown at once
+  // afterwards: fading it in again each time made avatars blink.
+  const loadedAvatars = new Set();
   function avatarEl(name) {
     const el = document.createElement('span');
     el.className = 'avatar';
@@ -347,7 +350,8 @@
       img.decoding = 'async';
       img.loading = 'lazy';
       img.referrerPolicy = 'no-referrer';
-      img.addEventListener('load', () => img.classList.add('loaded'));
+      if (loadedAvatars.has(url)) img.classList.add('loaded', 'instant');
+      img.addEventListener('load', () => { loadedAvatars.add(url); img.classList.add('loaded'); });
       img.addEventListener('error', () => img.remove());
       img.src = url;
       el.append(img);
