@@ -241,6 +241,25 @@ const check = (name, ok, extra = '') => {
   check('drops interval 30 → 60 → 60, skipped while waiting, reset to 15 after a claim',
     JSON.stringify(drops) === JSON.stringify([29, 59, 59, 0, 14]), drops.join(','));
 
+  // retention: a flood of points must not push old drops out; daily totals kept for a year
+  const kept = await sw.evaluate(async () => {
+    const saved = await chrome.storage.local.get(['stats', 'history']);
+    const now = Date.now();
+    const history = [
+      ...Array.from({ length: 300 }, (_, i) => ({ kind: 'points', channel: 'x', amount: 50, at: now - i * 60e3 })),
+      ...Array.from({ length: 5 }, (_, i) => ({ kind: 'drops', channel: '', amount: 1, at: now - 864e5 * (30 + i) }))
+    ];
+    const stats = GLINT.emptyStats();
+    for (let i = 1; i <= 400; i++) stats.days[GLINT.dayKey(now - i * 864e5)] = { points: 1, moments: 0, drops: 0 };
+    await chrome.storage.local.set({ stats, history });
+    await recordClaim({ kind: 'points', channel: 'x', amount: 50, at: now });
+    const after = await chrome.storage.local.get(['stats', 'history']);
+    await chrome.storage.local.set(saved);
+    return [after.history.filter(h => h.kind === 'points').length, after.history.filter(h => h.kind === 'drops').length,
+      Object.keys(after.stats.days).length];
+  });
+  check('history: 300 per kind, old drops survive; 366 days kept', JSON.stringify(kept) === '[300,5,366]', kept.join(','));
+
   // toggling master off propagates to page
   await sw.evaluate(async () => { const { settings } = await chrome.storage.sync.get('settings'); await chrome.storage.sync.set({ settings: { ...settings, enabled: false } }); });
   await tw.waitForTimeout(500);

@@ -3,7 +3,7 @@
 importScripts('/src/shared/defaults.js');
 
 const {
-  DEFAULT_SETTINGS, HISTORY_MAX, DROPS_INTERVAL_MIN, DROPS_MAX_INTERVAL_MIN, INVENTORY_URL,
+  DEFAULT_SETTINGS, HISTORY_MAX, DAYS_MAX, DROPS_INTERVAL_MIN, DROPS_MAX_INTERVAL_MIN, INVENTORY_URL,
   channelFromPath, dayKey, emptyStats
 } = GLINT;
 const AUTO_PARAM = 'glint=auto';
@@ -15,6 +15,12 @@ async function getSettings() {
 
 // ---- claim recording (writes are serialized so parallel claims don't clobber) ----
 let writeChain = Promise.resolve();
+
+/** Keep the newest HISTORY_MAX events of each kind (history is newest first). */
+function trimHistory(history) {
+  const seen = {};
+  return history.filter(h => (seen[h.kind] = (seen[h.kind] || 0) + 1) <= HISTORY_MAX);
+}
 
 function recordClaim(claim) {
   writeChain = writeChain.then(async () => {
@@ -32,9 +38,8 @@ function recordClaim(claim) {
       c[kind] = (c[kind] || 0) + amount;
       c.last = claim.at;
     }
-    // keep ~60 days of daily totals
     const days = Object.keys(stats.days).sort();
-    days.slice(0, Math.max(0, days.length - 60)).forEach(k => delete stats.days[k]);
+    days.slice(0, Math.max(0, days.length - DAYS_MAX)).forEach(k => delete stats.days[k]);
 
     history.unshift({
       kind,
@@ -44,9 +49,8 @@ function recordClaim(claim) {
       title: claim.title || '',
       at: claim.at
     });
-    history.length > HISTORY_MAX && (history.length = HISTORY_MAX);
 
-    await chrome.storage.local.set({ stats, history });
+    await chrome.storage.local.set({ stats, history: trimHistory(history) });
     await clearIssues(kind);
     await updateBadge(stats);
     await notify(claim);

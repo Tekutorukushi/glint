@@ -25,7 +25,11 @@
       channelList: Object.freeze([])
     }),
     CHANNEL_LIST_MAX: 200,
+    // history keeps the newest HISTORY_MAX events of EACH kind, so frequent points
+    // don't push rare drops and moments out
     HISTORY_MAX: 300,
+    // daily totals kept for the chart and export
+    DAYS_MAX: 366,
     // drops check interval: starts at MIN, doubles while the inventory has nothing to claim
     DROPS_INTERVAL_MIN: 15,
     DROPS_MAX_INTERVAL_MIN: 60,

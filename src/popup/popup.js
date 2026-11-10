@@ -350,7 +350,8 @@
     const todayK = dayKey();
     const yesterdayK = dayKey(Date.now() - 864e5);
     let currentDay = '';
-    items.slice(0, 150).forEach(h => {
+    // a single type shows everything that's stored for it
+    items.slice(0, GLINT.HISTORY_MAX).forEach(h => {
       const k = dayKey(h.at);
       if (k !== currentDay) {
         currentDay = k;
