@@ -464,5 +464,11 @@
   },
   "importDone": {
     "message": "Statistics loaded."
+  },
+  "supportTitle": {
+    "message": "Support on Boosty"
+  },
+  "supportHint": {
+    "message": "Glint is free and has no ads"
   }
 }

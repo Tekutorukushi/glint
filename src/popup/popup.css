@@ -48,6 +48,8 @@
 * { box-sizing: border-box; }
 
 html, body { margin: 0; }
+/* only <main> scrolls; the popup page itself never moves */
+html { overflow: hidden; }
 
 body {
   width: 360px;
@@ -88,11 +90,19 @@ body.off .brand-coin { filter: grayscale(1); opacity: 0.55; }
 .master-label { color: var(--ink-2); font-size: 12px; }
 
 /* ---------- switch ---------- */
+/* The real checkbox is invisible but must sit inside its own row: without a positioned
+   ancestor it was laid out far down the unscrolled page, and focusing it on click
+   scrolled the whole popup up. */
+.master, .row { position: relative; }
 input[role="switch"] {
   position: absolute;
+  top: 50%;
+  right: 12px;
   opacity: 0;
   width: 1px;
   height: 1px;
+  margin: 0;
+  pointer-events: none;
 }
 .switch {
   flex: none;
@@ -479,6 +489,21 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 .import-box .actions { margin-top: 8px; }
 .import-box:not([hidden]) { animation: rise var(--slow) var(--ease); }
 .footnote { margin: 12px 2px 0; color: var(--ink-3); font-size: 11.5px; }
+/* support the author: a quiet link at the end of settings, not a banner */
+.support {
+  display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: center;
+  margin-top: 14px; padding: 10px 12px; border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--brass) 10%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brass) 28%, transparent);
+  color: var(--ink); text-decoration: none;
+  transition: background-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.support::after { content: "→"; color: var(--brass-ink); transition: transform var(--fast) var(--ease); }
+.support:hover { background: color-mix(in srgb, var(--brass) 16%, var(--surface)); }
+.support:hover::after { transform: translateX(3px); }
+.support svg { width: 20px; height: 20px; fill: none; stroke: var(--brass-ink); stroke-width: 1.6; stroke-linejoin: round; }
+.support b { display: block; font-weight: 600; }
+.support small { display: block; margin-top: 1px; color: var(--ink-3); font-size: 11.5px; }
 
 /* ---------- tab bar ---------- */
 .tabs {

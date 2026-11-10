@@ -401,6 +401,46 @@ const check = (name, ok, extra = '') => {
       JSON.stringify(got) === JSON.stringify(['99,999', '1.2M', '1,234,567', '123K', '123,999']), got.join(' | '));
   }
 
+  // support link at the end of settings opens Boosty in a new tab (served locally in the test)
+  {
+    await ctx.route('https://boosty.to/**', route => route.fulfill({ contentType: 'text/html', body: '<title>boosty</title>' }));
+    const p = await ctx.newPage();
+    await p.setViewportSize({ width: 360, height: 580 });
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.click('#tab-settings');
+    await p.locator('#supportLink').scrollIntoViewIfNeeded();
+    await p.waitForTimeout(200);
+    await p.screenshot({ path: `${out}/support.png` });
+    const [tab] = await Promise.all([ctx.waitForEvent('page'), p.click('#supportLink')]);
+    await tab.waitForLoadState();
+    const opened = tab.url();
+    const text = await p.textContent('#supportLink');
+    await tab.close();
+    await p.close();
+    check('support link opens Boosty in a new tab', opened === 'https://boosty.to/tekutorukushi/donate' && text.includes('Boosty'),
+      `${opened} | ${text.trim().replace(/\s+/g, ' ')}`);
+  }
+
+  // toggling a switch far down the settings must not scroll the popup page away
+  {
+    const p = await ctx.newPage();
+    await p.setViewportSize({ width: 360, height: 580 });
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.click('#tab-settings');
+    const row = p.locator('input[data-setting="badge"]').locator('xpath=..');
+    await row.scrollIntoViewIfNeeded();
+    const mainBefore = await p.evaluate(() => document.querySelector('main').scrollTop);
+    const was = await p.isChecked('input[data-setting="badge"]');
+    await row.click();
+    await p.waitForTimeout(300);
+    const got = await p.evaluate(() => [document.scrollingElement.scrollTop, document.querySelector('main').scrollTop]);
+    const now = await p.isChecked('input[data-setting="badge"]');
+    await row.click(); // back as it was
+    await p.close();
+    check('toggling a setting keeps the popup in place', got[0] === 0 && got[1] === mainBefore && now === !was,
+      `page=${got[0]}, main=${mainBefore}→${got[1]}, toggled=${now !== was}`);
+  }
+
   // channel detection shared by content, popup and background
   const names = await sw.evaluate(() => ['https://www.twitch.tv/Shroud', '/popout/xqc/chat', '/following', 'chrome-extension://abc/src/popup.html',
     '/directory/category/x', '/drops/inventory', '/moderator/kaicenat', '/'].map(GLINT.channelFromPath));

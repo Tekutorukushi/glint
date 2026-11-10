@@ -74,7 +74,7 @@ Glint automates claiming Twitch channel rewards (channel points bonus, moments a
 
 **Data usage:** no user data is collected or transmitted. Не отмечать ни одного типа данных и поставить все три подтверждения (не продаём данные, не используем их не по назначению, не используем для кредитоспособности).
 
-**Privacy policy URL:** ⏳ ещё не создана. Репозиторий `Tekutorukushi/glint` остаётся приватным, поэтому политика публикуется отдельно: публичный (или secret) Gist `PRIVACY.md` с содержимым файла `PRIVACY.md` из проекта → ссылку `https://gist.github.com/Tekutorukushi/…` вставить сюда и в форму магазина. Ссылка должна открываться без входа (проверить в окне инкогнито).
+**Privacy policy URL:** https://github.com/Tekutorukushi/glint-dev/blob/main/PRIVACY.md — публичный репозиторий `glint-dev`, открывается без входа. При любом изменении `PRIVACY.md` в проекте обновить файл и там.
 
 ## Перед отправкой
 
@@ -82,7 +82,7 @@ Glint automates claiming Twitch channel rewards (channel points bonus, moments a
 - [ ] Версия в `manifest.json` выше, чем у прошлой загруженной.
 - [ ] `npm run pack` — в архиве только `manifest.json`, `_locales`, `icons/*.png`, `src`.
 - [ ] `npm run store` — свежие скриншоты (по 5 на язык).
-- [ ] **Создать Gist с PRIVACY.md** (см. «Privacy policy URL» выше) и вписать ссылку сюда; она открывается без входа.
-- [ ] Gist совпадает с текущим `PRIVACY.md`.
+- [x] Политика опубликована: https://github.com/Tekutorukushi/glint-dev/blob/main/PRIVACY.md
+- [ ] `PRIVACY.md` в `glint-dev` совпадает с файлом в проекте.
 - [ ] Последние коммиты отправлены на GitHub (`git push`).
 - [ ] Проверено на настоящем Twitch: сундук, моменты, дропы, аватары.
