@@ -39,6 +39,12 @@ const momentPage = works => `<!doctype html><html><body><main>
 const brokenPlayerPage = `<!doctype html><html><body><main>
 <div class="content-overlay-gate"><button onclick="window.__gateClicks=(window.__gateClicks||0)+1">Try again</button></div>
 </main></body></html>`;
+// the bonus chest appears 4 s after load
+const lateBonusPage = channelPage.replace('</script></main>', `
+const late = document.getElementById('bonus'), box = late.parentElement;
+late.remove();
+setTimeout(() => box.appendChild(late), 4000);
+</script></main>`);
 
 let failed = 0;
 const check = (name, ok, extra = '') => {
@@ -58,6 +64,7 @@ const check = (name, ok, extra = '') => {
     if (u.pathname.startsWith('/momentok')) return html(momentPage(true));
     if (u.pathname.startsWith('/momentstuck')) return html(momentPage(false));
     if (u.pathname.startsWith('/brokenplayer')) return html(brokenPlayerPage);
+    if (u.pathname.startsWith('/latebonus')) return html(lateBonusPage);
     return html(channelPage);
   });
   const swErr = []; sw.on('console', m => ['error', 'warning'].includes(m.type()) && swErr.push(m.text()));
@@ -239,6 +246,19 @@ const check = (name, ok, extra = '') => {
   console.log('badge when paused:', JSON.stringify(await sw.evaluate(() => chrome.action.getBadgeText({}))));
   console.log('page errors:', pageErr, 'SW errors:', swErr);
   check('no page or service worker errors', !pageErr.length && !swErr.length);
+
+  // extension updated while a Twitch tab is open: the old script must stop quietly
+  // (it used to click and then throw on chrome.i18n). Must be last: it reloads the extension.
+  await sw.evaluate(async () => { const { settings } = await chrome.storage.sync.get('settings'); await chrome.storage.sync.set({ settings: { ...settings, enabled: true } }); });
+  const orphan = await ctx.newPage();
+  const orphanErr = [];
+  orphan.on('pageerror', e => orphanErr.push(e.message));
+  await orphan.goto('https://www.twitch.tv/latebonus');
+  await orphan.waitForTimeout(1500);
+  await sw.evaluate(() => chrome.runtime.reload()).catch(() => {});
+  await orphan.waitForTimeout(7000);
+  check('after extension reload: old script stops without errors',
+    !orphanErr.length && await orphan.evaluate(() => window.__claimed) === undefined, orphanErr.join('; '));
   await ctx.close();
   console.log(failed ? `\n${failed} check(s) failed` : '\nall checks passed');
   process.exit(failed ? 1 : 0);

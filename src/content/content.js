@@ -15,7 +15,15 @@
   const isAutoInventory = isInventory() && new URLSearchParams(location.search).get('glint') === 'auto';
 
   // ------------------------------------------------------------------ helpers
-  const t = (key, subs) => chrome.i18n.getMessage(key, subs) || key;
+  // After the extension is updated or reloaded, this script keeps running in tabs that were
+  // already open, but chrome.* is gone. Such an orphan must stop quietly; a tab reload
+  // brings in the new version.
+  function alive() {
+    try { return !!chrome.runtime?.id; } catch (e) { return false; }
+  }
+  const t = (key, subs) => {
+    try { return chrome.i18n.getMessage(key, subs) || key; } catch (e) { return key; }
+  };
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
@@ -53,10 +61,10 @@
   const currentChannel = () => GLINT.channelFromPath(location.pathname);
 
   function send(msg) {
+    if (!alive()) return stop();
     try {
       return chrome.runtime.sendMessage(msg).catch(() => {});
     } catch (e) {
-      // extension was reloaded or removed: stop working on this page
       stop();
     }
   }
@@ -256,7 +264,7 @@
       if (watched.has(v)) return;
       watched.add(v);
       v.addEventListener('pause', () => {
-        if (!settings.enabled || !settings.keepAlive) return;
+        if (!alive() || !settings.enabled || !settings.keepAlive) return;
         if (Date.now() - lastUserInput < 2000) return;
         setTimeout(() => { v.paused && !v.ended && v.play().catch(() => {}); }, 600);
       });
@@ -296,6 +304,7 @@
 
   // ------------------------------------------------------------------ loop
   function tick() {
+    if (!alive()) return stop();
     if (!settings.enabled) return;
     try {
       if (isInventory()) {
