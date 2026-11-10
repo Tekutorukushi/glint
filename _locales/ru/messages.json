@@ -470,5 +470,17 @@
   },
   "supportHint": {
     "message": "Glint бесплатный и без рекламы"
+  },
+  "reportTitle": {
+    "message": "Сообщить об ошибке на GitHub"
+  },
+  "reportShort": {
+    "message": "Сообщить"
+  },
+  "reportWhat": {
+    "message": "Что случилось"
+  },
+  "reportSteps": {
+    "message": "Как повторить"
   }
 }

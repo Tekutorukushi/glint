@@ -470,5 +470,17 @@
   },
   "supportHint": {
     "message": "Glint is free and has no ads"
+  },
+  "reportTitle": {
+    "message": "Report a problem on GitHub"
+  },
+  "reportShort": {
+    "message": "Report"
+  },
+  "reportWhat": {
+    "message": "What happened"
+  },
+  "reportSteps": {
+    "message": "How to reproduce"
   }
 }

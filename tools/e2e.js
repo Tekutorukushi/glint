@@ -199,6 +199,14 @@ const check = (name, ok, extra = '') => {
     await p.waitForTimeout(500);
     check('notice shown in popup', await p.isVisible('#notice'), await p.textContent('#noticeText'));
     await p.screenshot({ path: `${out}/notice.png` });
+    {
+      const u = new URL(await p.getAttribute('#noticeReport', 'href'));
+      const body = u.searchParams.get('body') || '';
+      check('notice report link: prefilled GitHub issue with the problem code, no channel names',
+        u.origin + u.pathname === 'https://github.com/Tekutorukushi/glint/issues/new' &&
+        /self-check: \w+ \(\w+\)/.test(body) && body.includes('version: ') && !/stuckbonus/i.test(u.href),
+        u.searchParams.get('title'));
+    }
     const shown = Object.keys(health).length;
     await p.click('#noticeClose');
     await p.waitForTimeout(300);
@@ -219,6 +227,17 @@ const check = (name, ok, extra = '') => {
     GLINT.collectsOn('a', { channelMode: 'except', channelList: ['a'] }),
     GLINT.collectsOn('b', { channelMode: 'except', channelList: ['a'] })]);
   check('collectsOn', JSON.stringify(rules) === '[true,true,false,false,true]', rules.join(','));
+  {
+    // reopening the popup always starts on "Overview", whatever tab was open before
+    const p = await ctx.newPage();
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.click('#tab-history');
+    await p.reload();
+    const sel = await p.getAttribute('#tab-overview', 'aria-selected');
+    const histHidden = await p.isHidden('#panel-history');
+    await p.close();
+    check('popup reopens on Overview', sel === 'true' && histHidden, `overview selected=${sel}`);
+  }
   {
     const p = await ctx.newPage();
     await p.setViewportSize({ width: 360, height: 580 });
@@ -384,8 +403,9 @@ const check = (name, ok, extra = '') => {
     await p.click('#tab-channels');
     await p.waitForTimeout(300);
     const title = await p.textContent('#allChannelsTitle');
-    // reopening the popup restores the tab and builds the list
+    // a fresh popup opens on Overview; switching to Channels builds the list
     await p.reload();
+    await p.click('#tab-channels');
     await p.waitForTimeout(500);
     const rows = await p.locator('#allChannelList .ch-row').count();
     const firstByPoints = await p.textContent('#allChannelList li:first-child b');
@@ -455,6 +475,13 @@ const check = (name, ok, extra = '') => {
     const [tab] = await Promise.all([ctx.waitForEvent('page'), p.click('#supportLink')]);
     await tab.waitForLoadState();
     const opened = tab.url();
+    {
+      const u = new URL(await p.getAttribute('#reportLink', 'href'));
+      const body = u.searchParams.get('body') || '';
+      check('report link: GitHub issue with version and browser, no self-check line',
+        u.origin + u.pathname === 'https://github.com/Tekutorukushi/glint/issues/new' &&
+        body.includes('version: ') && body.includes('browser: ') && !body.includes('self-check'), u.search.slice(0, 80));
+    }
     const text = await p.textContent('#supportLink');
     await tab.close();
     await p.close();

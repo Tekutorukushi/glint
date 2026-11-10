@@ -52,7 +52,6 @@
     });
     // the channel list is only built while visible; after this script has fully run
     if (tab.id === 'tab-channels') queueMicrotask(() => renderAllChannels());
-    try { localStorage.setItem('glint-tab', tab.id); } catch (e) { /* ignore */ }
   }
   tabs.forEach((b, i) => {
     b.addEventListener('click', () => selectTab(b));
@@ -64,10 +63,8 @@
       next.focus();
     });
   });
-  try {
-    const saved = localStorage.getItem('glint-tab');
-    saved && $(saved) && selectTab($(saved));
-  } catch (e) { /* ignore */ }
+  // the popup always opens on "Overview"; the last tab used to be remembered (1.6.5 and older)
+  try { localStorage.removeItem('glint-tab'); } catch (e) { /* ignore */ }
 
   // ------------------------------------------------------------ settings
   const master = $('masterSwitch');
@@ -189,13 +186,33 @@
     const what = { points: 'issueWhatPoints', moments: 'issueWhatMoments', drops: 'issueWhatDrops' }[h.kind];
     return t('issueClickFailed', [t(what)]);
   }
+  // "Report a problem": a plain link to a prefilled GitHub issue. Nothing is sent by Glint itself;
+  // the user sees the text on GitHub first. Only technical details go in, never channels or stats.
+  const ISSUES_URL = 'https://github.com/Tekutorukushi/glint/issues/new';
+  function reportUrl(h) {
+    const lines = [
+      `### ${t('reportWhat')}`, '', '', `### ${t('reportSteps')}`, '', '',
+      '### Glint',
+      `- version: ${chrome.runtime.getManifest().version}`,
+      `- browser: ${navigator.userAgent}`,
+      `- language: ${chrome.i18n.getUILanguage()}`,
+    ];
+    if (h) lines.push(`- self-check: ${h.issue}${h.kind ? ` (${h.kind})` : ''}`);
+    const title = h ? `Self-check: ${h.issue}${h.kind ? ` (${h.kind})` : ''}` : '';
+    return `${ISSUES_URL}?${new URLSearchParams({ title, body: lines.join('\n') })}`;
+  }
+  $('reportLink').href = reportUrl(null);
+
   function renderNotice(health) {
     const list = Object.entries(health || {})
       .filter(([, h]) => h && Date.now() - h.at < ISSUE_TTL)
       .sort((a, b) => b[1].at - a[1].at);
     shownIssue = settings.enabled && list.length ? list[0][0] : null;
     $('notice').hidden = !shownIssue;
-    if (shownIssue) $('noticeText').textContent = issueText(list[0][1]);
+    if (shownIssue) {
+      $('noticeText').textContent = issueText(list[0][1]);
+      $('noticeReport').href = reportUrl(list[0][1]);
+    }
   }
   $('noticeClose').addEventListener('click', async () => {
     const { health = {} } = await chrome.storage.session.get('health');

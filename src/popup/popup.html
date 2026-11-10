@@ -28,7 +28,7 @@
 
   <div class="notice" id="notice" role="status" hidden>
     <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 18 17H2z"/><path d="M10 8v4M10 14.5v.01"/></svg>
-    <p><b id="noticeText"></b><small data-i18n="issueHint"></small></p>
+    <p><b id="noticeText"></b><small><span data-i18n="issueHint"></span> <a class="notice-link" id="noticeReport" target="_blank" rel="noopener" data-i18n="reportShort"></a></small></p>
     <button class="notice-close" id="noticeClose" data-i18n-label="issueDismiss">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15"/></svg>
     </button>
@@ -170,6 +170,10 @@
         <a class="support" id="supportLink" href="https://boosty.to/tekutorukushi/donate" target="_blank" rel="noopener">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 16.5s-6-3.6-6-8.1A3.4 3.4 0 0 1 10 6.3a3.4 3.4 0 0 1 6 2.1c0 4.5-6 8.1-6 8.1z"/></svg>
           <span><b data-i18n="supportTitle"></b><small data-i18n="supportHint"></small></span>
+        </a>
+        <a class="report" id="reportLink" target="_blank" rel="noopener">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 17V3.5M4 4h10l-2 3.5 2 3.5H4"/></svg>
+          <span data-i18n="reportTitle"></span>
         </a>
         <p class="footnote" id="version"></p>
       </div>

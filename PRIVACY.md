@@ -6,8 +6,12 @@
 
 Расширение работает только на страницах `www.twitch.tv`. Оно нажимает кнопки, которые Twitch показывает вам самим, и не читает ваши сообщения, пароли или платёжные данные.
 
+Ссылка «Сообщить об ошибке» открывает страницу GitHub с заготовкой сообщения: версия Glint, браузер, язык и, если есть, код проблемы самопроверки. Названия каналов и статистика туда не попадают. Ничего не отправляется, пока вы сами не опубликуете сообщение на GitHub.
+
 **English.** Glint does not collect, transmit or sell any data. It has no servers of its own, no analytics and no ads. Settings, statistics of collected points, moments and drops, the event history and channel avatar addresses are stored only in your browser (`chrome.storage`). Settings may sync between your devices through the browser's own sync if you have it enabled. "Reset statistics" deletes the statistics, the history and the remembered avatars; your settings stay. Removing the extension deletes all data, settings included.
 
 The only thing the extension loads from the network is avatar pictures of channels you have watched. They are loaded from Twitch's image server (`static-cdn.jtvnw.net`), the same way the Twitch website loads them, without sending any of your data. Glint takes the picture addresses from the Twitch pages you open. You can turn this off in settings ("Channel avatars") to see first letters instead.
 
 The extension only runs on `www.twitch.tv` pages. It clicks buttons Twitch already shows you and does not read your messages, passwords or payment details.
+
+The "Report a problem" link opens a GitHub page with a draft message: Glint version, browser, language and, if any, the self-check problem code. Channel names and statistics are not included. Nothing is sent unless you post the message on GitHub yourself.
