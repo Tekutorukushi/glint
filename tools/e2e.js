@@ -159,9 +159,32 @@ const check = (name, ok, extra = '') => {
     console.log(scheme, 'popup errors:', perr);
     await p.close();
   }
+  // channel detection shared by content, popup and background
+  const names = await sw.evaluate(() => ['https://www.twitch.tv/Shroud', '/popout/xqc/chat', '/following',
+    '/directory/category/x', '/drops/inventory', '/moderator/kaicenat', '/'].map(GLINT.channelFromPath));
+  check('channelFromPath', JSON.stringify(names) === JSON.stringify(['shroud', 'xqc', '', '', '', 'kaicenat', '']), names.join(','));
+
+  // drops: empty inventory stretches the interval, a claim resets it
+  const drops = await sw.evaluate(async () => {
+    const minutesLeft = async () => Math.round(((await chrome.storage.local.get('dropsCheck')).dropsCheck.nextAt - Date.now()) / 60e3);
+    const r = [];
+    await inventoryChecked(0); r.push(await minutesLeft());
+    await inventoryChecked(0); r.push(await minutesLeft());
+    await inventoryChecked(0); r.push(await minutesLeft());
+    const before = (await chrome.tabs.query({})).length;
+    await checkDrops(); // within the wait: must not open a tab
+    r.push((await chrome.tabs.query({})).length - before);
+    await inventoryChecked(2); r.push(await minutesLeft());
+    await chrome.storage.local.remove('dropsCheck');
+    return r;
+  });
+  check('drops interval 30 → 60 → 60, skipped while waiting, reset to 15 after a claim',
+    JSON.stringify(drops) === JSON.stringify([29, 59, 59, 0, 14]), drops.join(','));
+
   // toggling master off propagates to page
   await sw.evaluate(async () => { const { settings } = await chrome.storage.sync.get('settings'); await chrome.storage.sync.set({ settings: { ...settings, enabled: false } }); });
   await tw.waitForTimeout(500);
+  check('keepAlive off remembered for page.js', await tw.evaluate(() => localStorage.getItem('glint-keepalive')) === '0');
   console.log('badge when paused:', JSON.stringify(await sw.evaluate(() => chrome.action.getBadgeText({}))));
   console.log('page errors:', pageErr, 'SW errors:', swErr);
   check('no page or service worker errors', !pageErr.length && !swErr.length);

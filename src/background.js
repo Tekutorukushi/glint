@@ -2,7 +2,10 @@
 'use strict';
 importScripts('/src/shared/defaults.js');
 
-const { DEFAULT_SETTINGS, HISTORY_MAX, DROPS_INTERVAL_MIN, INVENTORY_URL, dayKey, emptyStats } = GLINT;
+const {
+  DEFAULT_SETTINGS, HISTORY_MAX, DROPS_INTERVAL_MIN, DROPS_MAX_INTERVAL_MIN, INVENTORY_URL,
+  channelFromPath, dayKey, emptyStats
+} = GLINT;
 const AUTO_PARAM = 'glint=auto';
 
 async function getSettings() {
@@ -87,13 +90,16 @@ async function updateBadge(stats) {
 }
 
 // ---- drops: periodically open the inventory page in a background tab ----
-async function checkDrops() {
+// The alarm fires every DROPS_INTERVAL_MIN; storage.local.dropsCheck = {idle, nextAt}
+// stretches the real interval (15 → 30 → 60 min) while the inventory has nothing to claim.
+async function checkDrops(force = false) {
   const s = await getSettings();
   if (!s.enabled || !s.drops) return;
+  const { dropsCheck = {} } = await chrome.storage.local.get('dropsCheck');
+  if (!force && Date.now() < (dropsCheck.nextAt || 0)) return;
   const tabs = await chrome.tabs.query({ url: 'https://www.twitch.tv/*' });
   const inventory = tabs.find(t => t.url && t.url.startsWith(INVENTORY_URL));
-  const watching = tabs.filter(t => t.url && !t.url.startsWith(INVENTORY_URL));
-  if (!watching.length) return; // nobody is watching, nothing to claim
+  if (!tabs.some(t => channelFromPath(t.url))) return; // no channel open, nothing earns drops
   if (inventory) {
     if (!inventory.active) chrome.tabs.reload(inventory.id);
     return;
@@ -103,8 +109,24 @@ async function checkDrops() {
   await chrome.storage.session.set({ autoTabs: [...autoTabs, tab.id] });
 }
 
+async function inventoryChecked(claimed) {
+  const { dropsCheck = {} } = await chrome.storage.local.get('dropsCheck');
+  const idle = claimed > 0 ? 0 : (dropsCheck.idle || 0) + 1;
+  const minutes = Math.min(DROPS_INTERVAL_MIN * 2 ** idle, DROPS_MAX_INTERVAL_MIN);
+  // a minute of slack so the next alarm tick is not missed by a few seconds
+  await chrome.storage.local.set({ dropsCheck: { idle, nextAt: Date.now() + (minutes - 1) * 60e3 } });
+}
+
 function scheduleDrops() {
   chrome.alarms.create('drops', { delayInMinutes: 2, periodInMinutes: DROPS_INTERVAL_MIN });
+  // new browser session: campaigns may have started, check at the normal pace again
+  chrome.storage.local.remove('dropsCheck');
+}
+
+function scheduleMidnight() {
+  const next = new Date();
+  next.setHours(24, 0, 5, 0);
+  chrome.alarms.create('midnight', { when: next.getTime() });
 }
 
 // ---- listeners (registered synchronously so they survive worker restarts) ----
@@ -122,9 +144,12 @@ chrome.runtime.onStartup.addListener(() => {
 
 chrome.alarms.onAlarm.addListener(alarm => {
   if (alarm.name === 'drops') checkDrops();
-  if (alarm.name === 'midnight') updateBadge();
+  if (alarm.name === 'midnight') {
+    updateBadge();
+    scheduleMidnight();
+  }
 });
-chrome.alarms.create('midnight', { periodInMinutes: 30 });
+scheduleMidnight();
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || typeof msg !== 'object') return;
@@ -137,11 +162,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (!autoTabs.includes(sender.tab.id)) return;
       chrome.storage.session.set({ autoTabs: autoTabs.filter(id => id !== sender.tab.id) });
       chrome.tabs.remove(sender.tab.id).catch(() => {});
+      inventoryChecked(Number(msg.claimed) || 0);
     });
     return;
   }
   if (msg.type === 'checkDropsNow') {
-    checkDrops().then(() => sendResponse({ ok: true }));
+    checkDrops(true).then(() => sendResponse({ ok: true }));
     return true;
   }
 });

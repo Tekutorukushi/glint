@@ -6,11 +6,6 @@
 
   const { DEFAULT_SETTINGS } = GLINT;
   const TICK_MS = 1500;
-  const RESERVED = new Set([
-    '', 'directory', 'drops', 'settings', 'subscriptions', 'inventory', 'wallet', 'search',
-    'videos', 'moderator', 'u', 'p', 'downloads', 'jobs', 'turbo', 'friends', 'messages',
-    'following', 'prime', 'store', 'bits', 'login', 'signup', 'payments', 'popout'
-  ]);
 
   let settings = { ...DEFAULT_SETTINGS };
   let timer = null;
@@ -48,13 +43,7 @@
     }, ms));
   }
 
-  function currentChannel() {
-    const parts = location.pathname.split('/').filter(Boolean);
-    if (parts[0] === 'popout' && parts[1]) return parts[1].toLowerCase();
-    if (parts[0] === 'moderator' && parts[1]) return parts[1].toLowerCase();
-    const name = (parts[0] || '').toLowerCase();
-    return RESERVED.has(name) || !/^[a-z0-9_]{2,25}$/.test(name) ? '' : name;
-  }
+  const currentChannel = () => GLINT.channelFromPath(location.pathname);
 
   function send(msg) {
     try {
@@ -204,6 +193,7 @@
 
   // ------------------------------------------------------------------ drops (inventory page)
   const claimedDrops = new WeakSet();
+  let dropsClaimed = 0;
   const isDropClaim = b =>
     /^(claim now|claim|получить сейчас|получить|забрать|reclamar ahora|resgatar agora|jetzt abholen)$/i.test(textOf(b));
   function claimDrops() {
@@ -218,6 +208,7 @@
       clickWorked(b, () => isDropClaim(b), 3000).then(worked => {
         // a button that ignored the click gets another chance on a later tick
         if (!worked) return claimedDrops.delete(b);
+        dropsClaimed++;
         send({ type: 'claim', kind: 'drops', channel: '', title, at: Date.now() });
         toast('drops', t('toastDrop'), title);
       });
@@ -283,7 +274,10 @@
   }
 
   function pushPageConfig() {
-    window.postMessage({ glint: 'config', keepAlive: settings.enabled && settings.keepAlive }, location.origin);
+    const keepAlive = settings.enabled && settings.keepAlive;
+    window.postMessage({ glint: 'config', keepAlive }, location.origin);
+    // page.js reads this on the next load, before our settings arrive
+    try { localStorage.setItem('glint-keepalive', keepAlive ? '1' : '0'); } catch (e) { /* ignore */ }
   }
 
   function start() {
@@ -301,7 +295,7 @@
     start();
     if (isAutoInventory) {
       // background tab opened by Glint: give the page time to load and claim, then close it
-      setTimeout(() => send({ type: 'inventoryDone' }), 25000);
+      setTimeout(() => send({ type: 'inventoryDone', claimed: dropsClaimed }), 25000);
     }
   });
 

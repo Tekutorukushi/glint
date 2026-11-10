@@ -74,15 +74,7 @@
       return;
     }
     const tabsOpen = await chrome.tabs.query({ url: 'https://www.twitch.tv/*' });
-    const channels = [...new Set(tabsOpen
-      .map(tab => {
-        try {
-          const seg = new URL(tab.url).pathname.split('/').filter(Boolean);
-          const name = seg[0] === 'popout' ? seg[1] : seg[0];
-          return name && /^[a-z0-9_]{2,25}$/i.test(name) && !['directory', 'drops', 'settings', 'videos', 'search'].includes(name) ? name : '';
-        } catch (e) { return ''; }
-      })
-      .filter(Boolean))];
+    const channels = [...new Set(tabsOpen.map(tab => GLINT.channelFromPath(tab.url)).filter(Boolean))];
     if (!channels.length) {
       el.className = 'status';
       el.textContent = t('statusLineIdle');

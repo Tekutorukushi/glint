@@ -5,7 +5,9 @@
  */
 (() => {
   'use strict';
+  // last value saved by the content script; on by default until it says otherwise
   let keepAlive = true;
+  try { keepAlive = localStorage.getItem('glint-keepalive') !== '0'; } catch (e) { /* ignore */ }
 
   const proto = Document.prototype;
   const visDesc = Object.getOwnPropertyDescriptor(proto, 'visibilityState');
