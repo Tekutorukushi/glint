@@ -5,8 +5,10 @@
 ## Вкладка «Store listing»
 
 **Name** — берётся из манифеста (`extName`):
-- en: Glint: channel points, drops & moments for Twitch
-- ru: Glint: баллы, дропы и моменты для Twitch
+- en: Glint — Auto Points for Twitch
+- ru: Glint — автосбор баллов для Twitch
+
+Не ставить «Twitch» первым словом и не убирать «for/для Twitch»: правила бренда Twitch разрешают только указание совместимости, а магазин отклоняет названия, похожие на официальные.
 
 **Summary** — тоже из манифеста (`extDescription`, до 132 символов).
 
@@ -74,7 +76,7 @@ Glint automates claiming Twitch channel rewards (channel points bonus, moments a
 
 **Data usage:** no user data is collected or transmitted. Не отмечать ни одного типа данных и поставить все три подтверждения (не продаём данные, не используем их не по назначению, не используем для кредитоспособности).
 
-**Privacy policy URL:** https://github.com/Tekutorukushi/glint-dev/blob/main/PRIVACY.md — публичный репозиторий `glint-dev`, открывается без входа. При любом изменении `PRIVACY.md` в проекте обновить файл и там.
+**Privacy policy URL:** https://github.com/Tekutorukushi/glint/blob/main/PRIVACY.md — основной репозиторий, должен быть публичным, чтобы ссылка открывалась без входа.
 
 ## Перед отправкой
 
@@ -82,7 +84,7 @@ Glint automates claiming Twitch channel rewards (channel points bonus, moments a
 - [ ] Версия в `manifest.json` выше, чем у прошлой загруженной.
 - [ ] `npm run pack` — в архиве только `manifest.json`, `_locales`, `icons/*.png`, `src`.
 - [ ] `npm run store` — свежие скриншоты (по 5 на язык).
-- [x] Политика опубликована: https://github.com/Tekutorukushi/glint-dev/blob/main/PRIVACY.md
-- [ ] `PRIVACY.md` в `glint-dev` совпадает с файлом в проекте.
+- [x] Политика опубликована: https://github.com/Tekutorukushi/glint/blob/main/PRIVACY.md
+- [ ] Актуальный `PRIVACY.md` отправлен на GitHub (`git push`), ссылка открывается в окне инкогнито.
 - [ ] Последние коммиты отправлены на GitHub (`git push`).
 - [ ] Проверено на настоящем Twitch: сундук, моменты, дропы, аватары.

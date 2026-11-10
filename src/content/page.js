@@ -1,3 +1,4 @@
+/* © 2026 DENVER. All rights reserved. See LICENSE. */
 /*
  * Runs in the page's own context (MAIN world) at document_start.
  * Makes Twitch believe the tab is visible, so the stream is not paused or

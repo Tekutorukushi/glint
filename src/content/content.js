@@ -1,3 +1,4 @@
+/* © 2026 DENVER. All rights reserved. See LICENSE. */
 /* Glint content script for www.twitch.tv (isolated world). */
 (() => {
   'use strict';

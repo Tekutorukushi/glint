@@ -5,7 +5,7 @@ import zipfile
 
 root = pathlib.Path(__file__).resolve().parent.parent
 version = json.loads((root / 'manifest.json').read_text(encoding='utf-8'))['version']
-include = ['manifest.json', '_locales', 'icons', 'src']
+include = ['manifest.json', 'LICENSE', '_locales', 'icons', 'src']
 out = root / 'dist' / f'glint-{version}.zip'
 out.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:

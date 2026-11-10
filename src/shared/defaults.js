@@ -1,3 +1,4 @@
+/* © 2026 DENVER. All rights reserved. See LICENSE. */
 /* Shared constants. Loaded as a classic script in every context. */
 (() => {
   // first path segments on twitch.tv that are not channels

@@ -1,3 +1,4 @@
+/* © 2026 DENVER. All rights reserved. See LICENSE. */
 /* Glint service worker: records claims, schedules drop checks, badge and notifications. */
 'use strict';
 importScripts('/src/shared/defaults.js');

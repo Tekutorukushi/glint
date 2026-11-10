@@ -2,6 +2,7 @@
   "name": "glint",
   "version": "1.0.0",
   "private": true,
+  "license": "UNLICENSED",
   "description": "Dev tooling for the Glint browser extension (the extension itself has no build step)",
   "scripts": {
     "test": "node tools/e2e.js",

@@ -1,3 +1,4 @@
+/* © 2026 DENVER. All rights reserved. See LICENSE. */
 /* Glint popup logic. */
 (() => {
   'use strict';
