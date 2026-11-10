@@ -9,7 +9,12 @@ const path = require('path');
 const { launchWithExtension } = require('./lib');
 const out = path.join(__dirname, 'out');
 fs.mkdirSync(out, { recursive: true });
+// avatars: one in a channel link, one recognised by alt (sidebar-like), one from a foreign host
+const avatarsHtml = `<a href="/shroud"><img src="https://static-cdn.jtvnw.net/jtv_user_pictures/abc-profile_image-300x300.png" alt="shroud"></a>
+<img src="https://static-cdn.jtvnw.net/jtv_user_pictures/def-profile_image-50x50.jpeg" alt="KaiCenat">
+<a href="/evil"><img src="https://evil.example/jtv_user_pictures/x-profile_image-70x70.png" alt="evil"></a>`;
 const channelPage = `<!doctype html><html><body><main>
+${avatarsHtml}
 <video id="v" muted loop src=""></video>
 <div class="community-points-summary"><span data-test-selector="balance-string">1,200</span>
 <button aria-label="Claim Bonus" id="bonus"><span class="claimable-bonus__icon">chest</span></button></div>
@@ -55,6 +60,17 @@ const check = (name, ok, extra = '') => {
 (async () => {
   const { ctx, sw, id } = await launchWithExtension();
   const hits = {};
+  // Twitch's image server: any avatar is the extension icon; foreign hosts fail
+  const avatarRequests = [];
+  await ctx.route('https://static-cdn.jtvnw.net/**', route => {
+    avatarRequests.push(route.request().url());
+    route.fulfill({ contentType: 'image/png', body: fs.readFileSync(path.join(__dirname, '..', 'icons', 'icon-128.png')) });
+  });
+  const foreignFromPopup = [];
+  await ctx.route('https://evil.example/**', route => {
+    if (route.request().frame().url().startsWith('chrome-extension://')) foreignFromPopup.push(route.request().url());
+    route.fulfill({ contentType: 'image/png', body: fs.readFileSync(path.join(__dirname, '..', 'icons', 'icon-16.png')) });
+  });
   await ctx.route('https://www.twitch.tv/**', route => {
     const u = new URL(route.request().url());
     hits[u.pathname] = (hits[u.pathname] || 0) + 1;
@@ -218,6 +234,35 @@ const check = (name, ok, extra = '') => {
     await p.click('#tab-overview');
     console.log(scheme, 'popup errors:', perr);
     await p.close();
+  }
+
+  // avatars: collected from Twitch pages, shown in the popup, only from Twitch's image server
+  {
+    const stored = await sw.evaluate(async () => (await chrome.storage.local.get('avatars')).avatars || {});
+    check('avatars stored, resized to 70×70, foreign host ignored',
+      stored.shroud?.url === 'https://static-cdn.jtvnw.net/jtv_user_pictures/abc-profile_image-70x70.png' &&
+      stored.kaicenat?.url === 'https://static-cdn.jtvnw.net/jtv_user_pictures/def-profile_image-70x70.jpeg' && !stored.evil,
+      Object.keys(stored).join(','));
+    const p = await ctx.newPage();
+    await p.setViewportSize({ width: 360, height: 580 });
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.click('#tab-overview');
+    await p.waitForTimeout(600);
+    const shown = await p.locator('.channel .avatar img.loaded').count();
+    await p.click('#tab-history');
+    await p.waitForTimeout(400);
+    const inHistory = await p.locator('.event-pic .avatar img.loaded').count();
+    await p.screenshot({ path: `${out}/history-avatars.png` });
+    // switched off: letters only, nothing loaded
+    await sw.evaluate(async () => { const { settings } = await chrome.storage.sync.get('settings'); await chrome.storage.sync.set({ settings: { ...settings, avatars: false } }); });
+    await p.waitForTimeout(300);
+    const whenOff = await p.locator('.avatar img').count();
+    await sw.evaluate(async () => { const { settings } = await chrome.storage.sync.get('settings'); await chrome.storage.sync.set({ settings: { ...settings, avatars: true } }); });
+    await p.close();
+    check('avatars shown in top channels and history, hidden when off', shown === 2 && inHistory >= 1 && whenOff === 0,
+      `top=${shown}, history=${inHistory}, off=${whenOff}`);
+    check('popup loads avatars only from Twitch image server', avatarRequests.length > 0 && !foreignFromPopup.length,
+      `twitch=${avatarRequests.length}, foreign=${foreignFromPopup.length}`);
   }
 
   // chart period: 7 / 14 / 30 days, remembered between popup openings

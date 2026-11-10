@@ -10,6 +10,7 @@
   let settings = { ...DEFAULT_SETTINGS };
   let stats = emptyStats();
   let history = [];
+  let avatars = {};
   let historyKind = 'all';
   let lastToday = null;
 
@@ -332,6 +333,28 @@
     $('chart').replaceChildren(svg);
   }
 
+  // ------------------------------------------------------------ avatars
+  // A circle with the channel's first letter; the Twitch avatar, if known, fades in on top.
+  // If the picture can't load (offline, renamed), the letter simply stays.
+  function avatarEl(name) {
+    const el = document.createElement('span');
+    el.className = 'avatar';
+    el.textContent = (name || '?').slice(0, 1).toUpperCase();
+    const url = settings.avatars && avatars[name] && GLINT.avatarUrl(avatars[name].url);
+    if (url) {
+      const img = new Image();
+      img.alt = '';
+      img.decoding = 'async';
+      img.loading = 'lazy';
+      img.referrerPolicy = 'no-referrer';
+      img.addEventListener('load', () => img.classList.add('loaded'));
+      img.addEventListener('error', () => img.remove());
+      img.src = url;
+      el.append(img);
+    }
+    return el;
+  }
+
   function renderChannels() {
     const list = Object.entries(stats.channels)
       .map(([name, c]) => ({ name, points: c.points || 0, last: c.last || 0 }))
@@ -345,9 +368,7 @@
     list.forEach(c => {
       const li = document.createElement('li');
       li.className = 'channel';
-      const avatar = document.createElement('span');
-      avatar.className = 'avatar';
-      avatar.textContent = c.name.slice(0, 1).toUpperCase();
+      const avatar = avatarEl(c.name);
       const a = document.createElement('a');
       a.href = `https://www.twitch.tv/${c.name}`;
       a.target = '_blank';
@@ -395,6 +416,15 @@
       const row = document.createElement('div');
       row.className = 'event';
       row.innerHTML = `<svg class="kind-icon" viewBox="0 0 24 24" aria-hidden="true"><circle class="face" cx="12" cy="12" r="12"/>${ICONS[h.kind] || ''}</svg><div class="what"><b></b><small></small></div><time></time>`;
+      // with a known avatar: the channel's picture, and the event type as a small badge on it
+      if (h.channel && settings.avatars && avatars[h.channel]) {
+        const pic = document.createElement('span');
+        pic.className = 'event-pic';
+        const badge = row.querySelector('.kind-icon');
+        badge.classList.add('badge');
+        pic.append(avatarEl(h.channel), badge);
+        row.prepend(pic);
+      }
       const title = h.kind === 'points'
         ? `${h.approx ? '≈' : '+'}${fmt(h.amount)} ${t('pointsUnit')}`
         : t(h.kind === 'drops' ? 'eventDrop' : 'eventMoment');
@@ -457,11 +487,12 @@
     loadNotice();
   }
 
-  Promise.all([chrome.storage.sync.get('settings'), chrome.storage.local.get(['stats', 'history'])])
+  Promise.all([chrome.storage.sync.get('settings'), chrome.storage.local.get(['stats', 'history', 'avatars'])])
     .then(([sync, local]) => {
       settings = { ...DEFAULT_SETTINGS, ...(sync.settings || {}) };
       stats = { ...emptyStats(), ...(local.stats || {}) };
       history = local.history || [];
+      avatars = local.avatars || {};
       renderAll();
     });
 
@@ -471,8 +502,17 @@
       renderSettings();
       renderStatus();
       loadNotice();
+      if (changes.settings.oldValue?.avatars !== settings.avatars) {
+        renderChannels();
+        renderHistory();
+      }
     }
     if (area === 'session' && changes.health) renderNotice(changes.health.newValue);
+    if (area === 'local' && changes.avatars) {
+      avatars = changes.avatars.newValue || {};
+      renderChannels();
+      renderHistory();
+    }
     if (area === 'local' && (changes.stats || changes.history)) {
       if (changes.stats) stats = { ...emptyStats(), ...(changes.stats.newValue || {}) };
       if (changes.history) history = changes.history.newValue || [];

@@ -302,6 +302,28 @@
     health.sinceBonusMs > NO_BONUS_MS && reportIssue('noBonus', 'points');
   }
 
+  // ------------------------------------------------------------------ avatars
+  // Twitch shows channel avatars (player header, sidebar) as <img> from its image server,
+  // with alt = display name and usually inside a link to the channel. Remember their URLs
+  // so the popup can show them instead of a letter.
+  const sentAvatars = new Map();
+  function collectAvatars() {
+    if (window.top !== window || onCooldown('avatars', 10000)) return;
+    $$('img[src*="/jtv_user_pictures/"]').forEach(img => {
+      const url = GLINT.avatarUrl(img.currentSrc || img.src);
+      if (!url) return;
+      const link = img.closest('a[href]');
+      let channel = link ? GLINT.channelFromPath(link.getAttribute('href')) : '';
+      if (!channel) {
+        const alt = (img.alt || '').trim().toLowerCase();
+        channel = /^[a-z0-9_]{2,25}$/.test(alt) ? alt : '';
+      }
+      if (!channel || sentAvatars.get(channel) === url) return;
+      sentAvatars.set(channel, url);
+      send({ type: 'avatar', channel, url });
+    });
+  }
+
   // ------------------------------------------------------------------ loop
   function tick() {
     if (!alive()) return stop();
@@ -320,6 +342,7 @@
       settings.autoRecover && recoverPlayer();
       settings.matureGate && passMatureGate();
       guardVideo();
+      settings.avatars && collectAvatars();
     } catch (e) {
       console.warn('Glint:', e);
     }

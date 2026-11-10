@@ -304,5 +304,11 @@
         "example": "14"
       }
     }
+  },
+  "setAvatars": {
+    "message": "Channel avatars"
+  },
+  "setAvatarsHint": {
+    "message": "Loads channel pictures from Twitch's image server. Off: first letters instead"
   }
 }

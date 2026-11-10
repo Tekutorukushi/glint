@@ -20,6 +20,7 @@
       notifyDrops: true,
       notifyMoments: false,
       badge: true,
+      avatars: true,
       // where points and moments are collected: 'all' | 'only' (channelList) | 'except' (channelList)
       channelMode: 'all',
       channelList: Object.freeze([])
@@ -51,6 +52,18 @@
       const s = String(text || '').trim().toLowerCase().replace(/^@/, '')
         .replace(/^(https?:\/\/)?((www|m)\.)?twitch\.tv(?=\/|$)/, '');
       return globalThis.GLINT.channelFromPath(s.startsWith('/') ? s : `/${s}`);
+    },
+
+    /**
+     * A channel avatar URL from Twitch's image server, resized to 70×70, or '' for
+     * anything else. The only remote resource Glint ever loads (see PRIVACY.md).
+     */
+    avatarUrl(src) {
+      let url;
+      try { url = new URL(String(src || '')); } catch (e) { return ''; }
+      if (url.protocol !== 'https:' || url.hostname !== 'static-cdn.jtvnw.net') return '';
+      if (!url.pathname.startsWith('/jtv_user_pictures/')) return '';
+      return `https://static-cdn.jtvnw.net${url.pathname.replace(/-profile_image-\d+x\d+\./, '-profile_image-70x70.')}`;
     },
 
     /** Whether points and moments should be collected on this channel. */

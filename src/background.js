@@ -58,6 +58,25 @@ function recordClaim(claim) {
   return writeChain;
 }
 
+// ---- channel avatars: storage.local.avatars = { name: {url, at} } ----
+const AVATARS_MAX = 500;
+
+function recordAvatar(channel, url) {
+  writeChain = writeChain.then(async () => {
+    const { avatars = {} } = await chrome.storage.local.get('avatars');
+    const old = avatars[channel];
+    // the same picture seen again: refresh the timestamp at most once a day
+    if (old && old.url === url && Date.now() - old.at < 864e5) return;
+    avatars[channel] = { url, at: Date.now() };
+    const names = Object.keys(avatars);
+    if (names.length > AVATARS_MAX) {
+      names.sort((a, b) => avatars[a].at - avatars[b].at)
+        .slice(0, names.length - AVATARS_MAX).forEach(n => delete avatars[n]);
+    }
+    await chrome.storage.local.set({ avatars });
+  }).catch(e => console.error('Glint: failed to record avatar', e));
+}
+
 // ---- self-check: problems reported by content scripts, shown in the popup ----
 // storage.session.health = { 'issue:kind': {issue, kind, channel, at} }
 const ISSUES = ['clickFailed', 'noWidget', 'noBonus'];
@@ -185,6 +204,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'claim' && ['points', 'moments', 'drops'].includes(msg.kind)) {
     recordClaim({ ...msg, at: Number(msg.at) || Date.now() }).then(() => sendResponse({ ok: true }));
     return true;
+  }
+  if (msg.type === 'avatar') {
+    const channel = channelFromPath(`/${msg.channel || ''}`);
+    const url = GLINT.avatarUrl(msg.url);
+    channel && url && recordAvatar(channel, url);
+    return;
   }
   if (msg.type === 'health' && ISSUES.includes(msg.issue) && ['points', 'moments', 'drops'].includes(msg.kind)) {
     recordIssue(msg);

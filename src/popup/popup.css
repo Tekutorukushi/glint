@@ -259,7 +259,16 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
   font-weight: 700;
   color: var(--on-brass);
   background: var(--brass-hi);
+  position: relative;
+  overflow: hidden;
 }
+/* the Twitch avatar covers the letter once it has loaded */
+.avatar img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  border-radius: 50%; object-fit: cover; opacity: 0;
+  transition: opacity var(--slow) var(--ease);
+}
+.avatar img.loaded { opacity: 1; }
 .channel a { color: var(--ink); text-decoration: none; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .channel a:hover { text-decoration: underline; text-underline-offset: 2px; }
 .channel .num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
@@ -310,6 +319,12 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 .event .what b { display: block; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .event .what small { display: block; color: var(--ink-3); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .event time { color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+.event-pic { position: relative; width: 24px; height: 24px; }
+.event-pic .avatar { grid-row: auto; width: 24px; height: 24px; font-size: 11px; }
+.event-pic .badge {
+  position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px;
+  border-radius: 50%; box-shadow: 0 0 0 2px var(--bg);
+}
 .kind-icon .face { fill: var(--raised); }
 .kind-icon .mark { fill: none; stroke: var(--brass-ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -368,6 +383,8 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 }
 .suggest:hover { text-decoration: underline; }
 
+.group h2 + .row:has(+ .actions) { border-radius: var(--radius-s); }
+.row + .actions { margin-top: 8px; }
 .actions { display: flex; gap: 8px; }
 .btn {
   flex: 1;
