@@ -25,6 +25,14 @@
 
   <p class="status" id="status"></p>
 
+  <div class="notice" id="notice" role="status" hidden>
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 18 17H2z"/><path d="M10 8v4M10 14.5v.01"/></svg>
+    <p><b id="noticeText"></b><small data-i18n="issueHint"></small></p>
+    <button class="notice-close" id="noticeClose" data-i18n-label="issueDismiss">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15"/></svg>
+    </button>
+  </div>
+
   <main>
     <!-- Overview -->
     <section class="panel" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
@@ -69,6 +77,23 @@
         <label class="row"><span><b data-i18n="setPoints"></b><small data-i18n="setPointsHint"></small></span><input type="checkbox" role="switch" data-setting="points"><i class="switch"></i></label>
         <label class="row"><span><b data-i18n="setMoments"></b><small data-i18n="setMomentsHint"></small></span><input type="checkbox" role="switch" data-setting="moments"><i class="switch"></i></label>
         <label class="row"><span><b data-i18n="setDrops"></b><small data-i18n="setDropsHint"></small></span><input type="checkbox" role="switch" data-setting="drops"><i class="switch"></i></label>
+      </div>
+      <div class="group">
+        <h2 id="channelsHead" data-i18n="groupChannels"></h2>
+        <div class="channel-box">
+          <div class="segmented seg-3" role="radiogroup" id="channelMode" aria-labelledby="channelsHead">
+            <button role="radio" aria-checked="true" data-mode="all" data-i18n="modeAll"></button>
+            <button role="radio" aria-checked="false" data-mode="only" data-i18n="modeOnly"></button>
+            <button role="radio" aria-checked="false" data-mode="except" data-i18n="modeExcept"></button>
+          </div>
+          <p class="hint" id="channelModeHint"></p>
+          <ul class="chips" id="channelChips"></ul>
+          <form class="add-channel" id="addChannelForm">
+            <input id="addChannelInput" type="text" autocomplete="off" spellcheck="false" data-i18n-placeholder="addChannelPlaceholder">
+            <button class="btn" type="submit" data-i18n="addChannel"></button>
+          </form>
+          <button class="suggest" id="addCurrent" type="button" hidden></button>
+        </div>
       </div>
       <div class="group">
         <h2 data-i18n="groupPlayer"></h2>

@@ -4,24 +4,11 @@
  * and saves popup screenshots (dark/light) to tools/out/.
  * Run: npm test
  */
-const { chromium } = require('playwright-core');
 const fs = require('fs');
-const path = require('path'), os = require('os');
-const ext = path.resolve(__dirname, '..');
+const path = require('path');
+const { launchWithExtension } = require('./lib');
 const out = path.join(__dirname, 'out');
 fs.mkdirSync(out, { recursive: true });
-const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'glint-profile-'));
-const findChromium = () => {
-  if (process.env.CHROMIUM_PATH) return process.env.CHROMIUM_PATH;
-  const base = `${process.env.HOME}/.cache/ms-playwright`;
-  const dirs = fs.existsSync(base) ? fs.readdirSync(base).filter(d => /^chromium-\d+$/.test(d)).sort().reverse() : [];
-  for (const d of dirs) for (const sub of fs.readdirSync(`${base}/${d}`)) {
-    const exe = `${base}/${d}/${sub}/chrome`;
-    if (fs.existsSync(exe)) return exe;
-  }
-  throw new Error('Chromium not found: run "npx playwright install chromium" or set CHROMIUM_PATH');
-};
-const exe = findChromium();
 const channelPage = `<!doctype html><html><body><main>
 <video id="v" muted loop src=""></video>
 <div class="community-points-summary"><span data-test-selector="balance-string">1,200</span>
@@ -60,8 +47,7 @@ const check = (name, ok, extra = '') => {
 };
 
 (async () => {
-  const ctx = await chromium.launchPersistentContext(profile, { executablePath: exe, headless: true,
-    args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`, '--headless=new'] });
+  const { ctx, sw, id } = await launchWithExtension();
   const hits = {};
   await ctx.route('https://www.twitch.tv/**', route => {
     const u = new URL(route.request().url());
@@ -74,9 +60,7 @@ const check = (name, ok, extra = '') => {
     if (u.pathname.startsWith('/brokenplayer')) return html(brokenPlayerPage);
     return html(channelPage);
   });
-  let [sw] = ctx.serviceWorkers(); if (!sw) sw = await ctx.waitForEvent('serviceworker');
   const swErr = []; sw.on('console', m => ['error', 'warning'].includes(m.type()) && swErr.push(m.text()));
-  const id = sw.url().split('/')[2];
 
   const tw = await ctx.newPage();
   const pageErr = []; tw.on('pageerror', e => pageErr.push(e.message)); tw.on('console', m => m.type() === 'error' && pageErr.push(m.text()));
@@ -112,7 +96,17 @@ const check = (name, ok, extra = '') => {
   const brokenB = await ctx.newPage(); // never reloaded: reloads exactly once
   await brokenB.addInitScript(seedRecover('0'));
   await brokenB.goto('https://www.twitch.tv/brokenplayer/b');
+
+  // channel list: an excluded channel is left alone
+  await sw.evaluate(async () => {
+    const { settings } = await chrome.storage.sync.get('settings');
+    await chrome.storage.sync.set({ settings: { ...settings, channelMode: 'except', channelList: ['skipme'] } });
+  });
+  const skip = await ctx.newPage();
+  await skip.goto('https://www.twitch.tv/skipme');
+
   await brokenB.waitForTimeout(8000);
+  check('excluded channel: bonus not clicked', await skip.evaluate(() => window.__claimed) === undefined);
   check('broken player, recent reload: clicks instead of reloading',
     hits['/brokenplayer/a'] === 1 && await brokenA.evaluate(() => window.__gateClicks) === 1, `loads=${hits['/brokenplayer/a']}`);
   check('broken player: reloads once, then clicks', hits['/brokenplayer/b'] === 2 &&
@@ -127,6 +121,63 @@ const check = (name, ok, extra = '') => {
   check('stuck bonus not recorded', has('points', 'stuckbonus') === 0);
   check('stuck moment not recorded', has('moments', 'momentstuck') === 0);
   console.log('badge:', await sw.evaluate(() => chrome.action.getBadgeText({})));
+
+  // self-check: the stuck bonus shows up as a notice in the popup, and can be dismissed
+  const health = await sw.evaluate(async () => (await chrome.storage.session.get('health')).health || {});
+  check('stuck bonus reported', !!health['clickFailed:points'] && health['clickFailed:points'].channel === 'stuckbonus',
+    Object.keys(health).join(','));
+  {
+    const p = await ctx.newPage();
+    await p.setViewportSize({ width: 360, height: 580 });
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.waitForTimeout(500);
+    check('notice shown in popup', await p.isVisible('#notice'), await p.textContent('#noticeText'));
+    await p.screenshot({ path: `${out}/notice.png` });
+    const shown = Object.keys(health).length;
+    await p.click('#noticeClose');
+    await p.waitForTimeout(300);
+    const left = await sw.evaluate(async () => Object.keys((await chrome.storage.session.get('health')).health || {}).length);
+    check('notice dismissed', left === shown - 1, `left=${left}`);
+    await p.close();
+  }
+  await sw.evaluate(() => chrome.storage.session.remove('health')); // clean popup screenshots
+
+  // channel list in the popup: parsing what people type, adding, the empty "only" warning
+  const parsed = await sw.evaluate(() => ['XQC', '@xqc', 'twitch.tv/xqc', 'https://www.twitch.tv/xqc/videos',
+    'm.twitch.tv/xqc', 'twitch.tv', 'directory', 'a b'].map(GLINT.channelFromInput));
+  check('channelFromInput', JSON.stringify(parsed) === JSON.stringify(['xqc', 'xqc', 'xqc', 'xqc', 'xqc', '', '', '']), parsed.join(','));
+  const rules = await sw.evaluate(() => [
+    GLINT.collectsOn('a', { channelMode: 'all', channelList: [] }),
+    GLINT.collectsOn('a', { channelMode: 'only', channelList: ['a'] }),
+    GLINT.collectsOn('b', { channelMode: 'only', channelList: ['a'] }),
+    GLINT.collectsOn('a', { channelMode: 'except', channelList: ['a'] }),
+    GLINT.collectsOn('b', { channelMode: 'except', channelList: ['a'] })]);
+  check('collectsOn', JSON.stringify(rules) === '[true,true,false,false,true]', rules.join(','));
+  {
+    const p = await ctx.newPage();
+    await p.setViewportSize({ width: 360, height: 580 });
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.click('#tab-settings');
+    await p.fill('#addChannelInput', 'https://www.twitch.tv/XQC');
+    await p.press('#addChannelInput', 'Enter');
+    await p.fill('#addChannelInput', 'not a channel!');
+    await p.press('#addChannelInput', 'Enter');
+    await p.waitForTimeout(300);
+    const s = await sw.evaluate(async () => (await chrome.storage.sync.get('settings')).settings);
+    check('channel added from a link', JSON.stringify(s.channelList) === '["skipme","xqc"]', s.channelList.join(','));
+    check('bad input marked invalid', await p.getAttribute('#addChannelInput', 'aria-invalid') === 'true');
+    await p.click('#channelChips li:first-child button');
+    await p.click('#channelChips li:first-child button');
+    await p.click('#channelMode [data-mode="only"]');
+    await p.waitForTimeout(300);
+    check('empty "only" list warns', await p.getAttribute('#channelModeHint', 'class') === 'hint warn');
+    await p.close();
+    // a realistic list for the settings screenshots
+    await sw.evaluate(async () => {
+      const { settings } = await chrome.storage.sync.get('settings');
+      await chrome.storage.sync.set({ settings: { ...settings, channelMode: 'except', channelList: ['jynxzi', 'zackrawrr'] } });
+    });
+  }
 
   // seed a week of data for screenshots
   await sw.evaluate(async () => {
@@ -160,9 +211,9 @@ const check = (name, ok, extra = '') => {
     await p.close();
   }
   // channel detection shared by content, popup and background
-  const names = await sw.evaluate(() => ['https://www.twitch.tv/Shroud', '/popout/xqc/chat', '/following',
+  const names = await sw.evaluate(() => ['https://www.twitch.tv/Shroud', '/popout/xqc/chat', '/following', 'chrome-extension://abc/src/popup.html',
     '/directory/category/x', '/drops/inventory', '/moderator/kaicenat', '/'].map(GLINT.channelFromPath));
-  check('channelFromPath', JSON.stringify(names) === JSON.stringify(['shroud', 'xqc', '', '', '', 'kaicenat', '']), names.join(','));
+  check('channelFromPath', JSON.stringify(names) === JSON.stringify(['shroud', 'xqc', '', '', '', '', 'kaicenat', '']), names.join(','));
 
   // drops: empty inventory stretches the interval, a claim resets it
   const drops = await sw.evaluate(async () => {

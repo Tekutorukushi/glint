@@ -7,7 +7,8 @@
     "test": "node tools/e2e.js",
     "icons": "node tools/icons.js",
     "check": "for f in src/*.js src/*/*.js tools/*.js; do node --check \"$f\" || exit 1; done",
-    "pack": "python3 tools/pack.py"
+    "pack": "python3 tools/pack.py",
+    "store": "node tools/store.js"
   },
   "devDependencies": {
     "playwright-core": "1.56.1"

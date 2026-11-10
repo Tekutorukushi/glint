@@ -34,6 +34,13 @@
     const ms = Math.min(60e3 * 2 ** (n - 1), 10 * 60e3);
     cooldowns.set(key, Date.now() + ms);
     console.warn(`Glint: ${key} click had no effect (${n}x), next try in ${ms / 1000}s`);
+    reportIssue('clickFailed', key);
+  }
+
+  /** Tell the popup that something looks broken (at most once per 10 min per issue). */
+  function reportIssue(issue, kind) {
+    if (onCooldown(`issue:${issue}:${kind}`, 10 * 60e3)) return;
+    send({ type: 'health', issue, kind, channel: currentChannel() });
   }
 
   /** After a click, resolves true if the button is gone, disabled or no longer a claim button. */
@@ -207,7 +214,10 @@
       b.click();
       clickWorked(b, () => isDropClaim(b), 3000).then(worked => {
         // a button that ignored the click gets another chance on a later tick
-        if (!worked) return claimedDrops.delete(b);
+        if (!worked) {
+          claimedDrops.delete(b);
+          return reportIssue('clickFailed', 'drops');
+        }
         dropsClaimed++;
         send({ type: 'claim', kind: 'drops', channel: '', title, at: Date.now() });
         toast('drops', t('toastDrop'), title);
@@ -255,6 +265,35 @@
   ['pointerdown', 'keydown'].forEach(type =>
     document.addEventListener(type, e => { e.isTrusted && (lastUserInput = Date.now()); }, true));
 
+  // ------------------------------------------------------------------ self-check
+  // If Twitch changes its markup, Glint silently stops finding things. Watch for that:
+  // the points block missing while a stream plays, or no bonus chest for a long time.
+  const NO_WIDGET_MS = 3 * 60e3;
+  const NO_BONUS_MS = 40 * 60e3; // the chest normally shows up every ~15 minutes
+  const health = { channel: '', lastTickAt: 0, noWidgetMs: 0, sinceBonusMs: 0 };
+  function selfCheck() {
+    const now = Date.now();
+    const step = Math.min(now - (health.lastTickAt || now), 60e3); // background tabs tick slowly
+    health.lastTickAt = now;
+    const channel = currentChannel();
+    if (channel !== health.channel) Object.assign(health, { channel, noWidgetMs: 0, sinceBonusMs: 0 });
+    if (!channel || window.top !== window) return;
+    const playing = $$('video').some(v => !v.paused && v.readyState > 2);
+    const loggedOut = !!$('[data-a-target="login-button"]');
+    if (!playing || loggedOut) return;
+
+    const summary = $('.community-points-summary, [data-test-selector="community-points-summary"]');
+    if (!summary) {
+      health.noWidgetMs += step;
+      health.noWidgetMs > NO_WIDGET_MS && reportIssue('noWidget', 'points');
+      return;
+    }
+    health.noWidgetMs = 0;
+    if (findBonusButton()) health.sinceBonusMs = 0;
+    else health.sinceBonusMs += step;
+    health.sinceBonusMs > NO_BONUS_MS && reportIssue('noBonus', 'points');
+  }
+
   // ------------------------------------------------------------------ loop
   function tick() {
     if (!settings.enabled) return;
@@ -263,8 +302,12 @@
         settings.drops && claimDrops();
         return;
       }
-      settings.points && claimPoints();
-      settings.moments && claimMoments();
+      const here = GLINT.collectsOn(currentChannel(), settings);
+      if (settings.points && here) {
+        selfCheck();
+        claimPoints();
+      }
+      settings.moments && here && claimMoments();
       settings.autoRecover && recoverPlayer();
       settings.matureGate && passMatureGate();
       guardVideo();

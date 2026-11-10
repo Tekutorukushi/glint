@@ -106,7 +106,7 @@
     "message": "Дропы"
   },
   "setDropsHint": {
-    "message": "Раз в 15 минут проверяет инвентарь в фоновой вкладке, пока открыт стрим"
+    "message": "Пока открыт стрим, проверяет инвентарь в фоновой вкладке раз в 15–60 минут"
   },
   "groupPlayer": {
     "message": "Плеер"
@@ -196,5 +196,98 @@
   },
   "notifMomentTitle": {
     "message": "Момент получен"
+  },
+  "issueClickFailed": {
+    "message": "Нажатие ничего не дало: $WHAT$",
+    "placeholders": {
+      "what": {
+        "content": "$1",
+        "example": "сундук с баллами"
+      }
+    }
+  },
+  "issueWhatPoints": {
+    "message": "сундук с баллами"
+  },
+  "issueWhatMoments": {
+    "message": "кнопка момента"
+  },
+  "issueWhatDrops": {
+    "message": "кнопка дропа"
+  },
+  "issueNoWidget": {
+    "message": "Не видно блока баллов на $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1",
+        "example": "twitch.tv/shroud"
+      }
+    }
+  },
+  "issueNoBonus": {
+    "message": "Сундук не появлялся больше 40 минут на $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1",
+        "example": "twitch.tv/shroud"
+      }
+    }
+  },
+  "issueHint": {
+    "message": "Возможно, Twitch обновил сайт. Glint продолжает пробовать сам."
+  },
+  "issueDismiss": {
+    "message": "Скрыть"
+  },
+  "groupChannels": {
+    "message": "Каналы"
+  },
+  "modeAll": {
+    "message": "Везде"
+  },
+  "modeOnly": {
+    "message": "Только эти"
+  },
+  "modeExcept": {
+    "message": "Кроме этих"
+  },
+  "modeAllHint": {
+    "message": "Баллы и моменты собираются на любом канале."
+  },
+  "modeOnlyHint": {
+    "message": "Баллы и моменты собираются только на каналах из списка."
+  },
+  "modeOnlyEmpty": {
+    "message": "Список пуст, поэтому сейчас ничего не собирается. Добавьте канал ниже."
+  },
+  "modeExceptHint": {
+    "message": "На каналах из списка баллы и моменты не собираются."
+  },
+  "addChannelPlaceholder": {
+    "message": "Имя канала или ссылка"
+  },
+  "addChannel": {
+    "message": "Добавить"
+  },
+  "addCurrentChannel": {
+    "message": "+ Добавить $NAME$ из открытой вкладки",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "shroud"
+      }
+    }
+  },
+  "removeChannel": {
+    "message": "Убрать $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "shroud"
+      }
+    }
+  },
+  "statusLineFiltered": {
+    "message": "На открытых каналах сбор выключен списком каналов"
   }
 }

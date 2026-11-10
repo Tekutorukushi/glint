@@ -16,6 +16,11 @@
   // ------------------------------------------------------------ i18n
   document.documentElement.lang = locale.split('-')[0];
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  document.querySelectorAll('[data-i18n-label]').forEach(el => {
+    el.setAttribute('aria-label', t(el.dataset.i18nLabel));
+    el.title = t(el.dataset.i18nLabel);
+  });
   $('version').textContent = t('versionLine', [chrome.runtime.getManifest().version]);
 
   // ------------------------------------------------------------ tabs
@@ -53,6 +58,7 @@
     $('masterLabel').textContent = t(settings.enabled ? 'statusOn' : 'statusPaused');
     document.body.classList.toggle('off', !settings.enabled);
     toggles.forEach(input => { input.checked = !!settings[input.dataset.setting]; });
+    renderChannelList();
   }
 
   function saveSetting(key, value) {
@@ -61,6 +67,73 @@
     renderSettings();
     renderStatus();
   }
+
+  // ------------------------------------------------------------ channel list
+  const modeButtons = Array.from(document.querySelectorAll('#channelMode button'));
+  const channelInput = $('addChannelInput');
+  let currentTabChannel = '';
+
+  function renderChannelList() {
+    const mode = settings.channelMode;
+    const list = settings.channelList || [];
+    modeButtons.forEach(b => {
+      const on = b.dataset.mode === mode;
+      b.setAttribute('aria-checked', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    const hint = $('channelModeHint');
+    const empty = mode === 'only' && !list.length;
+    hint.textContent = t(empty ? 'modeOnlyEmpty' : { all: 'modeAllHint', only: 'modeOnlyHint', except: 'modeExceptHint' }[mode]);
+    hint.classList.toggle('warn', empty);
+
+    const chips = $('channelChips');
+    chips.replaceChildren(...list.map(name => {
+      const li = document.createElement('li');
+      li.textContent = name;
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.setAttribute('aria-label', t('removeChannel', [name]));
+      x.title = t('removeChannel', [name]);
+      x.innerHTML = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 2l6 6M8 2 2 8"/></svg>';
+      x.addEventListener('click', () => saveSetting('channelList', list.filter(n => n !== name)));
+      li.append(x);
+      return li;
+    }));
+
+    const suggest = $('addCurrent');
+    suggest.hidden = !currentTabChannel || list.includes(currentTabChannel);
+    suggest.textContent = t('addCurrentChannel', [currentTabChannel]);
+  }
+
+  function addChannel(name) {
+    const list = settings.channelList || [];
+    if (!name) return false;
+    if (!list.includes(name) && list.length < GLINT.CHANNEL_LIST_MAX) saveSetting('channelList', [...list, name]);
+    return true;
+  }
+
+  modeButtons.forEach((b, i) => {
+    b.addEventListener('click', () => saveSetting('channelMode', b.dataset.mode));
+    b.addEventListener('keydown', e => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      const next = modeButtons[(i + d + modeButtons.length) % modeButtons.length];
+      saveSetting('channelMode', next.dataset.mode);
+      next.focus();
+    });
+  });
+  $('addChannelForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const ok = addChannel(GLINT.channelFromInput(channelInput.value));
+    channelInput.setAttribute('aria-invalid', String(!ok && !!channelInput.value.trim()));
+    if (ok) channelInput.value = '';
+  });
+  channelInput.addEventListener('input', () => channelInput.removeAttribute('aria-invalid'));
+  $('addCurrent').addEventListener('click', () => addChannel(currentTabChannel));
+  chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+    currentTabChannel = tab ? GLINT.channelFromPath(tab.url || '') : '';
+    renderChannelList();
+  });
 
   master.addEventListener('change', () => saveSetting('enabled', master.checked));
   toggles.forEach(input => input.addEventListener('change', () => saveSetting(input.dataset.setting, input.checked)));
@@ -74,16 +147,42 @@
       return;
     }
     const tabsOpen = await chrome.tabs.query({ url: 'https://www.twitch.tv/*' });
-    const channels = [...new Set(tabsOpen.map(tab => GLINT.channelFromPath(tab.url)).filter(Boolean))];
+    const open = [...new Set(tabsOpen.map(tab => GLINT.channelFromPath(tab.url)).filter(Boolean))];
+    const channels = open.filter(c => GLINT.collectsOn(c, settings));
     if (!channels.length) {
       el.className = 'status';
-      el.textContent = t('statusLineIdle');
+      el.textContent = t(open.length ? 'statusLineFiltered' : 'statusLineIdle');
       return;
     }
     el.className = 'status live';
     el.textContent = t('statusLineWatching', [channels.join(', ')]);
     el.title = channels.join(', ');
   }
+
+  // ------------------------------------------------------------ notice (self-check)
+  const ISSUE_TTL = 2 * 3600e3;
+  let shownIssue = null;
+  function issueText(h) {
+    const where = h.channel ? `twitch.tv/${h.channel}` : 'Twitch';
+    if (h.issue === 'noWidget') return t('issueNoWidget', [where]);
+    if (h.issue === 'noBonus') return t('issueNoBonus', [where]);
+    const what = { points: 'issueWhatPoints', moments: 'issueWhatMoments', drops: 'issueWhatDrops' }[h.kind];
+    return t('issueClickFailed', [t(what)]);
+  }
+  function renderNotice(health) {
+    const list = Object.entries(health || {})
+      .filter(([, h]) => h && Date.now() - h.at < ISSUE_TTL)
+      .sort((a, b) => b[1].at - a[1].at);
+    shownIssue = settings.enabled && list.length ? list[0][0] : null;
+    $('notice').hidden = !shownIssue;
+    if (shownIssue) $('noticeText').textContent = issueText(list[0][1]);
+  }
+  $('noticeClose').addEventListener('click', async () => {
+    const { health = {} } = await chrome.storage.session.get('health');
+    delete health[shownIssue];
+    await chrome.storage.session.set({ health });
+  });
+  const loadNotice = () => chrome.storage.session.get('health').then(({ health }) => renderNotice(health));
 
   // ------------------------------------------------------------ overview
   function renderToday() {
@@ -321,6 +420,7 @@
     renderChannels();
     renderHistory();
     renderStatus();
+    loadNotice();
   }
 
   Promise.all([chrome.storage.sync.get('settings'), chrome.storage.local.get(['stats', 'history'])])
@@ -336,7 +436,9 @@
       settings = { ...DEFAULT_SETTINGS, ...(changes.settings.newValue || {}) };
       renderSettings();
       renderStatus();
+      loadNotice();
     }
+    if (area === 'session' && changes.health) renderNotice(changes.health.newValue);
     if (area === 'local' && (changes.stats || changes.history)) {
       if (changes.stats) stats = { ...emptyStats(), ...(changes.stats.newValue || {}) };
       if (changes.history) history = changes.history.newValue || [];

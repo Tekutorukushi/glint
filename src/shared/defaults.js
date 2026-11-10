@@ -19,8 +19,12 @@
       toasts: true,
       notifyDrops: true,
       notifyMoments: false,
-      badge: true
+      badge: true,
+      // where points and moments are collected: 'all' | 'only' (channelList) | 'except' (channelList)
+      channelMode: 'all',
+      channelList: Object.freeze([])
     }),
+    CHANNEL_LIST_MAX: 200,
     HISTORY_MAX: 300,
     // drops check interval: starts at MIN, doubles while the inventory has nothing to claim
     DROPS_INTERVAL_MIN: 15,
@@ -29,11 +33,28 @@
 
     /** Channel name from a twitch.tv path or URL, '' for service pages (directory, drops, ...). */
     channelFromPath(pathOrUrl) {
-      let path;
-      try { path = new URL(String(pathOrUrl || ''), 'https://www.twitch.tv').pathname; } catch (e) { return ''; }
+      let url;
+      try { url = new URL(String(pathOrUrl || ''), 'https://www.twitch.tv'); } catch (e) { return ''; }
+      if (!/(^|\.)twitch\.tv$/.test(url.hostname)) return '';
+      const path = url.pathname;
       const parts = path.split('/').filter(Boolean).map(p => p.toLowerCase());
       const name = (parts[0] === 'popout' || parts[0] === 'moderator') ? parts[1] || '' : parts[0] || '';
       return RESERVED.has(name) || !/^[a-z0-9_]{2,25}$/.test(name) ? '' : name;
+    },
+
+    /** Channel name from what a person types: "xqc", "@xqc", "twitch.tv/xqc", a full URL. */
+    channelFromInput(text) {
+      const s = String(text || '').trim().toLowerCase().replace(/^@/, '')
+        .replace(/^(https?:\/\/)?((www|m)\.)?twitch\.tv(?=\/|$)/, '');
+      return globalThis.GLINT.channelFromPath(s.startsWith('/') ? s : `/${s}`);
+    },
+
+    /** Whether points and moments should be collected on this channel. */
+    collectsOn(channel, settings) {
+      const list = Array.isArray(settings.channelList) ? settings.channelList : [];
+      if (settings.channelMode === 'only') return !!channel && list.includes(channel);
+      if (settings.channelMode === 'except') return !channel || !list.includes(channel);
+      return true;
     },
 
     /** Local calendar day as YYYY-MM-DD. */

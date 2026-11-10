@@ -47,10 +47,34 @@ function recordClaim(claim) {
     history.length > HISTORY_MAX && (history.length = HISTORY_MAX);
 
     await chrome.storage.local.set({ stats, history });
+    await clearIssues(kind);
     await updateBadge(stats);
     await notify(claim);
   }).catch(e => console.error('Glint: failed to record claim', e));
   return writeChain;
+}
+
+// ---- self-check: problems reported by content scripts, shown in the popup ----
+// storage.session.health = { 'issue:kind': {issue, kind, channel, at} }
+const ISSUES = ['clickFailed', 'noWidget', 'noBonus'];
+
+function recordIssue(msg) {
+  writeChain = writeChain.then(async () => {
+    const { health = {} } = await chrome.storage.session.get('health');
+    health[`${msg.issue}:${msg.kind}`] = {
+      issue: msg.issue, kind: msg.kind, channel: String(msg.channel || '').slice(0, 25), at: Date.now()
+    };
+    await chrome.storage.session.set({ health });
+  }).catch(e => console.error('Glint: failed to record issue', e));
+}
+
+/** A successful claim proves that kind works again. */
+async function clearIssues(kind) {
+  const { health = {} } = await chrome.storage.session.get('health');
+  const keys = Object.keys(health).filter(k => health[k].kind === kind);
+  if (!keys.length) return;
+  keys.forEach(k => delete health[k]);
+  await chrome.storage.session.set({ health });
 }
 
 async function notify(claim) {
@@ -156,6 +180,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'claim' && ['points', 'moments', 'drops'].includes(msg.kind)) {
     recordClaim({ ...msg, at: Number(msg.at) || Date.now() }).then(() => sendResponse({ ok: true }));
     return true;
+  }
+  if (msg.type === 'health' && ISSUES.includes(msg.issue) && ['points', 'moments', 'drops'].includes(msg.kind)) {
+    recordIssue(msg);
+    return;
   }
   if (msg.type === 'inventoryDone' && sender.tab) {
     chrome.storage.session.get('autoTabs').then(({ autoTabs = [] }) => {

@@ -106,7 +106,7 @@
     "message": "Drops"
   },
   "setDropsHint": {
-    "message": "Every 15 minutes checks your inventory in a background tab while a stream is open"
+    "message": "Checks your inventory in a background tab every 15–60 min while a stream is open"
   },
   "groupPlayer": {
     "message": "Player"
@@ -196,5 +196,98 @@
   },
   "notifMomentTitle": {
     "message": "Moment claimed"
+  },
+  "issueClickFailed": {
+    "message": "Clicked $WHAT$, but nothing happened",
+    "placeholders": {
+      "what": {
+        "content": "$1",
+        "example": "the bonus chest"
+      }
+    }
+  },
+  "issueWhatPoints": {
+    "message": "the bonus chest"
+  },
+  "issueWhatMoments": {
+    "message": "the moment button"
+  },
+  "issueWhatDrops": {
+    "message": "the drop button"
+  },
+  "issueNoWidget": {
+    "message": "Can't find channel points on $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1",
+        "example": "twitch.tv/shroud"
+      }
+    }
+  },
+  "issueNoBonus": {
+    "message": "No bonus chest for over 40 minutes on $WHERE$",
+    "placeholders": {
+      "where": {
+        "content": "$1",
+        "example": "twitch.tv/shroud"
+      }
+    }
+  },
+  "issueHint": {
+    "message": "Twitch may have changed its site. Glint keeps trying on its own."
+  },
+  "issueDismiss": {
+    "message": "Dismiss"
+  },
+  "groupChannels": {
+    "message": "Channels"
+  },
+  "modeAll": {
+    "message": "Everywhere"
+  },
+  "modeOnly": {
+    "message": "Only these"
+  },
+  "modeExcept": {
+    "message": "All but these"
+  },
+  "modeAllHint": {
+    "message": "Points and moments are collected on every channel."
+  },
+  "modeOnlyHint": {
+    "message": "Points and moments are collected only on channels from the list."
+  },
+  "modeOnlyEmpty": {
+    "message": "The list is empty, so nothing is collected. Add a channel below."
+  },
+  "modeExceptHint": {
+    "message": "Points and moments are not collected on channels from the list."
+  },
+  "addChannelPlaceholder": {
+    "message": "Channel name or link"
+  },
+  "addChannel": {
+    "message": "Add"
+  },
+  "addCurrentChannel": {
+    "message": "+ Add $NAME$, the channel in this tab",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "shroud"
+      }
+    }
+  },
+  "removeChannel": {
+    "message": "Remove $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "shroud"
+      }
+    }
+  },
+  "statusLineFiltered": {
+    "message": "Open channels are excluded by your channel list"
   }
 }
