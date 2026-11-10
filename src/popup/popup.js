@@ -635,7 +635,7 @@
     clearTimeout(resetArmed);
     resetArmed = null;
     // through the background's write queue, so a claim being recorded right now can't undo it
-    await chrome.runtime.sendMessage({ type: 'replaceStats', data: { stats: emptyStats(), history: [] } });
+    await chrome.runtime.sendMessage({ type: 'replaceStats', data: { stats: emptyStats(), history: [] }, reset: true });
     resetBtn.classList.remove('confirm');
     resetBtn.textContent = t('resetDone');
     setTimeout(() => { resetBtn.textContent = t('resetStats'); }, 2000);

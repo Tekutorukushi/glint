@@ -24,11 +24,17 @@ function fromExtensionPage(sender) {
 }
 
 /** Replace all statistics (import from a file, or reset with empty data), in the write queue. */
-function replaceStats(data) {
+function replaceStats(data, reset = false) {
   writeChain = writeChain.then(async () => {
     const clean = GLINT.sanitizeImport(data);
     if (!clean) throw new Error('not a Glint export');
     await chrome.storage.local.set({ stats: clean.stats, history: clean.history });
+    if (reset) {
+      // "Reset statistics" removes everything Glint remembered, settings aside (PRIVACY.md):
+      // avatars are a list of channels seen, health issues name channels too
+      await chrome.storage.local.remove(['avatars', 'dropsCheck']);
+      await chrome.storage.session.remove('health');
+    }
     await updateBadge(clean.stats);
   });
   const done = writeChain;
@@ -36,9 +42,24 @@ function replaceStats(data) {
   return done;
 }
 
+// The same channel can be open twice (a stream and its popout chat, two windows): both tabs
+// see the chest disappear and the balance grow, and both report it. A second points/moments
+// claim for the same channel within this window is the same event: bonuses come every ~15 min
+// and moments rarely, so real claims are never this close.
+// Drops are not deduplicated: several different drops are claimed seconds apart in one pass,
+// and their titles (the only key there is) may repeat; the hidden frame never runs next to
+// the user's own inventory tab anyway (checkDrops skips when one is open).
+const DUPLICATE_MS = 60e3;
+function isDuplicate(claim, history) {
+  if (claim.kind === 'drops' || !claim.channel) return false;
+  return history.some(h => h.kind === claim.kind && h.channel === claim.channel &&
+    Math.abs(h.at - claim.at) < DUPLICATE_MS);
+}
+
 function recordClaim(claim) {
   writeChain = writeChain.then(async () => {
     const { stats = emptyStats(), history = [] } = await chrome.storage.local.get(['stats', 'history']);
+    if (isDuplicate(claim, history)) return;
     const kind = claim.kind;
     const amount = kind === 'points' ? Math.max(0, Math.round(claim.amount || 0)) : 1;
     const day = dayKey(claim.at);
@@ -170,9 +191,11 @@ async function checkDrops(force = false) {
     return;
   }
   // No new tab: ask an open channel tab to load the inventory in a hidden same-origin
-  // frame (twitch.tv allows that: X-Frame-Options SAMEORIGIN). Background tabs first,
-  // so the stream being watched isn't slowed down by loading another Twitch page.
-  channels.sort((a, b) => Number(a.active) - Number(b.active));
+  // frame (twitch.tv allows that: X-Frame-Options SAMEORIGIN). Background tabs first, so
+  // the stream being watched isn't slowed down; among them, ones playing sound, which
+  // Chrome doesn't throttle as hard as silent background tabs.
+  const rank = t => (t.active ? 2 : 0) + (t.audible ? 0 : 1);
+  channels.sort((a, b) => rank(a) - rank(b));
   for (const tab of channels) {
     try {
       const res = await chrome.tabs.sendMessage(tab.id, { type: 'checkInventory' }, { frameId: 0 });
@@ -183,9 +206,10 @@ async function checkDrops(force = false) {
   }
 }
 
-async function inventoryChecked(claimed) {
+async function inventoryChecked(claimed, loaded = true) {
   const { dropsCheck = {} } = await chrome.storage.local.get('dropsCheck');
-  const idle = claimed > 0 ? 0 : (dropsCheck.idle || 0) + 1;
+  // a page that never rendered says nothing about drops: keep the current pace
+  const idle = claimed > 0 ? 0 : loaded ? (dropsCheck.idle || 0) + 1 : (dropsCheck.idle || 0);
   const minutes = Math.min(DROPS_INTERVAL_MIN * 2 ** idle, DROPS_MAX_INTERVAL_MIN);
   // a minute of slack so the next alarm tick is not missed by a few seconds
   await chrome.storage.local.set({ dropsCheck: { idle, nextAt: Date.now() + (minutes - 1) * 60e3 } });
@@ -243,7 +267,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   // the hidden inventory frame finished: remember the result, let the tab remove the frame
   if (msg.type === 'inventoryDone' && sender.tab && sender.frameId > 0) {
-    inventoryChecked(Number(msg.claimed) || 0);
+    inventoryChecked(Number(msg.claimed) || 0, msg.loaded !== false);
     chrome.tabs.sendMessage(sender.tab.id, { type: 'inventoryClose' }, { frameId: 0 }).catch(() => {});
     return;
   }
@@ -253,7 +277,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   // import / reset from the popup only (never from a script running on a Twitch page)
   if (msg.type === 'replaceStats' && fromExtensionPage(sender)) {
-    replaceStats(msg.data).then(() => sendResponse({ ok: true }), e => sendResponse({ ok: false, error: e.message }));
+    replaceStats(msg.data, msg.reset === true).then(() => sendResponse({ ok: true }), e => sendResponse({ ok: false, error: e.message }));
     return true;
   }
 });

@@ -211,6 +211,7 @@
 
   // ------------------------------------------------------------------ drops (inventory page)
   const claimedDrops = new WeakSet();
+  const pendingDrops = new Set(); // clicks whose result isn't known yet
   let dropsClaimed = 0;
   const isDropClaim = b =>
     /^(claim now|claim|получить сейчас|получить|забрать|reclamar ahora|resgatar agora|jetzt abholen)$/i.test(textOf(b));
@@ -223,7 +224,10 @@
       for (let i = 0; i < 6 && box && !box.querySelector('img'); i++) box = box.parentElement;
       const title = box ? textOf(box.querySelector('p')) : '';
       b.click();
-      clickWorked(b, () => isDropClaim(b), 3000).then(worked => {
+      const check = clickWorked(b, () => isDropClaim(b), 3000);
+      pendingDrops.add(check);
+      check.finally(() => pendingDrops.delete(check));
+      check.then(worked => {
         // a button that ignored the click gets another chance on a later tick
         if (!worked) {
           claimedDrops.delete(b);
@@ -243,8 +247,24 @@
   // but no more than once per RELOAD_GAP so a long outage can't cause a reload loop.
   const RECOVER_KEY = 'glint-recover';
   const RELOAD_GAP = 10 * 60e3;
+  // The same overlay container also holds other gates: the mature-content warning (that one
+  // belongs to passMatureGate and its own switch), subscriber-only streams and the like. So
+  // recovery presses only a button that says retry/reload, never "the first/only button".
+  const CONTENT_WARNING = '[data-a-target^="content-classification-gate"], [data-a-target="player-overlay-mature-accept"]';
+  const RETRY_TEXT = /retry|try again|reload|повтор|перезагруз|reintentar|recargar|tentar novamente|recarregar|erneut|neu laden/i;
+  // Twitch's reload button ("Click here to reload the player") has no stable attribute of its
+  // own (hashed classes, generic label target), but its "refresh" icon (two circular arrows)
+  // is the same in every language: this is the start of that icon's path.
+  const REFRESH_ICON = 'path[d^="M20 5.999A9.985 9.985 0 0 0 12 2"]';
+  function findRetryButton() {
+    const overlay = $('[data-a-target="player-overlay-content-gate"], .content-overlay-gate');
+    if (!overlay || overlay.querySelector(CONTENT_WARNING)) return null;
+    return $$('button', overlay).find(b => b.querySelector(REFRESH_ICON) ||
+      RETRY_TEXT.test(textOf(b) + ' ' + (b.getAttribute('aria-label') || ''))) || null;
+  }
+
   function recoverPlayer() {
-    const gate = $('[data-a-target="player-overlay-content-gate"] button, .content-overlay-gate button');
+    const gate = findRetryButton();
     if (!gate || onCooldown('recover', 20000)) return;
     const now = Date.now();
     let state;
@@ -263,6 +283,17 @@
   }
 
   // resume playback that wasn't paused by the user
+  // Only a pause that Twitch makes in reaction to the tab going to the background is undone.
+  // Pauses from media keys, headphones, picture-in-picture or the browser's media controls
+  // come without page input events, so "no recent click" can't tell them apart; instead:
+  // the tab must really be hidden (this isolated world sees the real visibility, page.js
+  // only fakes it for Twitch's scripts) and the pause must follow the hiding closely.
+  const PAUSE_AFTER_HIDE_MS = 3000;
+  let hiddenAt = document.visibilityState === 'hidden' ? Date.now() : 0;
+  // window capture runs before page.js's document-level listener that swallows the event
+  window.addEventListener('visibilitychange', () => {
+    hiddenAt = document.visibilityState === 'hidden' ? Date.now() : 0;
+  }, true);
   const watched = new WeakSet();
   function guardVideo() {
     $$('video').forEach(v => {
@@ -270,8 +301,11 @@
       watched.add(v);
       v.addEventListener('pause', () => {
         if (!alive() || !settings.enabled || !settings.keepAlive) return;
+        if (document.visibilityState !== 'hidden' || !hiddenAt || Date.now() - hiddenAt > PAUSE_AFTER_HIDE_MS) return;
         if (Date.now() - lastUserInput < 2000) return;
-        setTimeout(() => { v.paused && !v.ended && v.play().catch(() => {}); }, 600);
+        setTimeout(() => {
+          document.visibilityState === 'hidden' && v.paused && !v.ended && v.play().catch(() => {});
+        }, 600);
       });
     });
   }
@@ -347,7 +381,7 @@
       'opacity:0;pointer-events:none;z-index:-1;';
     document.documentElement.appendChild(f);
     inventoryFrame = f;
-    inventoryTimer = setTimeout(closeInventoryFrame, 60000); // safety net
+    inventoryTimer = setTimeout(closeInventoryFrame, 90000); // safety net: the frame reports in 30–40 s
   }
   function closeInventoryFrame() {
     clearTimeout(inventoryTimer);
@@ -416,11 +450,29 @@
     settings = { ...DEFAULT_SETTINGS, ...(s || {}) };
     pushPageConfig();
     start();
-    if (isAutoInventory) {
-      // hidden frame opened by Glint: give the page time to load and claim, then report
-      setTimeout(() => send({ type: 'inventoryDone', claimed: dropsClaimed }), 25000);
-    }
+    if (isAutoInventory) runInventoryFrame();
   });
+
+  // Hidden inventory frame opened by Glint. The tab around it is usually in the background,
+  // where Chrome slows chained timers (our 1.5 s tick) to once a minute; so drops are claimed
+  // as the page renders (MutationObserver), and the report waits for every click's result.
+  // A page that never rendered is reported as not loaded, so the check doesn't count as "empty".
+  const INVENTORY_REPORT_MS = 30000;
+  const INVENTORY_PENDING_MAX_MS = 10000;
+  function runInventoryFrame() {
+    const observer = new MutationObserver(() => {
+      if (alive() && settings.enabled && settings.drops) claimDrops();
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+    setTimeout(async () => {
+      const waiting = Promise.all([...pendingDrops]);
+      await Promise.race([waiting, new Promise(r => setTimeout(r, INVENTORY_PENDING_MAX_MS))]);
+      observer.disconnect();
+      const main = $('main');
+      const loaded = !!main && textOf(main).length > 0;
+      send({ type: 'inventoryDone', claimed: dropsClaimed, loaded });
+    }, INVENTORY_REPORT_MS);
+  }
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'sync' || !changes.settings) return;

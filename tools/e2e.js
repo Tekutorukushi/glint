@@ -44,6 +44,41 @@ const momentPage = works => `<!doctype html><html><body><main>
 const brokenPlayerPage = `<!doctype html><html><body><main>
 <div class="content-overlay-gate"><button onclick="window.__gateClicks=(window.__gateClicks||0)+1">Try again</button></div>
 </main></body></html>`;
+// a really playing video (canvas stream), to see what Glint does when it gets paused
+const playingPage = `<!doctype html><html><body><main>
+<canvas id="c" width="64" height="36"></canvas><video id="v" muted playsinline></video>
+<script>
+const c = document.getElementById('c'), x = c.getContext('2d'); let i = 0;
+setInterval(() => { x.fillStyle = 'hsl(' + (i++ * 20 % 360) + ',50%,50%)'; x.fillRect(0, 0, 64, 36); }, 50);
+const v = document.getElementById('v'); v.srcObject = c.captureStream(10); v.play();
+</script></main></body></html>`;
+// mature-content warning inside the player overlay container (as on Twitch)
+const matureOverlayPage = `<!doctype html><html><body><main>
+<div class="content-overlay-gate"><div class="content-overlay-gate__allow-pointers">
+<button data-a-target="content-classification-gate-overlay-start-watching-button"
+  onclick="window.__mature=(window.__mature||0)+1; this.remove()">Start watching</button></div></div>
+</main></body></html>`;
+// the real Twitch reload button (HTML from the live site), in a given language
+const reloadButtonPage = label => `<!doctype html><html><body><main>
+<div class="content-overlay-gate"><p>Error #2000</p>
+<button class="ScCoreButton-sc-ocjdkq-0 iHfUmz" onclick="window.__reload=(window.__reload||0)+1"><div class="ScCoreButtonLabel-sc-s7h2b7-0 bfhate"><div class="Layout-sc-1xcs6mc-0 bPLZqY"><div class="ScCoreButtonIcon-sc-ypak37-0 cUiTmJ tw-core-button-icon"><div class="ScSvgWrapper-sc-wkgzod-0 cnGLHG tw-svg" data-a-selector="tw-core-button-icon"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 5.999A9.985 9.985 0 0 0 12 2C6.477 2 2 6.477 2 12h2a8 8 0 0 1 14.93-4H14v2h8V2h-2v3.999ZM12 20a8 8 0 0 0 8-8h2c0 5.523-4.477 10-10 10a9.985 9.985 0 0 1-8-3.999V22H2v-8h8v2H5.07A7.997 7.997 0 0 0 12 20Z"></path></svg></div></div></div><div data-a-target="tw-core-button-label-text" class="Layout-sc-1xcs6mc-0 zdujK">${label}</div></div></button>
+</div></main></body></html>`;
+// another gate in the same overlay container with a single, non-retry button
+const subOnlyPage = `<!doctype html><html><body><main>
+<div class="content-overlay-gate"><p>This stream is for subscribers only</p>
+<button onclick="window.__subscribe=(window.__subscribe||0)+1">Subscribe</button></div>
+</main></body></html>`;
+// a chest that every open copy of the channel can claim (stream + popout chat)
+const sharedChestPage = `<!doctype html><html><body><main>
+<div class="community-points-summary"><span data-test-selector="balance-string">1,000</span>
+<button aria-label="Claim Bonus" id="bonus"><span class="claimable-bonus__icon">chest</span></button></div>
+<script>
+document.getElementById('bonus').addEventListener('click', e => {
+  window.__claimed = (window.__claimed || 0) + 1;
+  const b = e.currentTarget;
+  setTimeout(() => { b.remove(); document.querySelector('[data-test-selector=balance-string]').textContent = '1,050'; }, 300);
+});
+</script></main></body></html>`;
 // the bonus chest appears 4 s after load
 const lateBonusPage = channelPage.replace('</script></main>', `
 const late = document.getElementById('bonus'), box = late.parentElement;
@@ -81,6 +116,12 @@ const check = (name, ok, extra = '') => {
     if (u.pathname.startsWith('/momentstuck')) return html(momentPage(false));
     if (u.pathname.startsWith('/brokenplayer')) return html(brokenPlayerPage);
     if (u.pathname.startsWith('/latebonus')) return html(lateBonusPage);
+    if (u.pathname.startsWith('/playing')) return html(playingPage);
+    if (u.pathname.startsWith('/matureoverlay')) return html(matureOverlayPage);
+    if (u.pathname.startsWith('/subonly')) return html(subOnlyPage);
+    if (u.pathname.startsWith('/reloadru')) return html(reloadButtonPage('Щелкните здесь, чтобы перезагрузить проигрыватель'));
+    if (u.pathname.startsWith('/reloadja')) return html(reloadButtonPage('ここをクリックしてプレーヤーを再読み込み'));
+    if (u.pathname.startsWith('/dupe') || u.pathname.startsWith('/popout/dupe')) return html(sharedChestPage);
     return html(channelPage);
   });
   const swErr = []; sw.on('console', m => ['error', 'warning'].includes(m.type()) && swErr.push(m.text()));
@@ -462,6 +503,89 @@ const check = (name, ok, extra = '') => {
   });
   check('drops interval 30 → 60 → 60, skipped while waiting, reset to 15 after a claim',
     JSON.stringify(drops) === JSON.stringify([29, 59, 59, 0, 14]), drops.join(','));
+  const notLoaded = await sw.evaluate(async () => {
+    await inventoryChecked(0); // idle 1 → next in 30 min
+    await inventoryChecked(0, false); // the page never rendered: says nothing about drops
+    const { dropsCheck } = await chrome.storage.local.get('dropsCheck');
+    await chrome.storage.local.remove('dropsCheck');
+    return [dropsCheck.idle, Math.round((dropsCheck.nextAt - Date.now()) / 60e3)];
+  });
+  check('inventory that never rendered does not stretch the interval', JSON.stringify(notLoaded) === '[1,29]', notLoaded.join(','));
+
+  // a pause without page input in a VISIBLE tab (media keys, PiP, browser media controls)
+  // must stay a pause: only pauses right after the tab got hidden are undone
+  {
+    const p = await ctx.newPage();
+    await p.goto('https://www.twitch.tv/playing');
+    await p.waitForTimeout(2500); // Glint attaches to the video on its tick
+    const playing = await p.evaluate(() => !document.getElementById('v').paused);
+    await p.evaluate(() => document.getElementById('v').pause());
+    await p.waitForTimeout(2000);
+    const stillPaused = await p.evaluate(() => document.getElementById('v').paused);
+    await p.close();
+    check('a pause in a visible tab is left alone', playing && stillPaused, `playing=${playing}, stillPaused=${stillPaused}`);
+  }
+
+  // stream + popout chat of the same channel: both see the chest go and the balance grow
+  {
+    const before = await sw.evaluate(async () => (await chrome.storage.local.get('history')).history.filter(h => h.channel === 'dupe').length);
+    const a = await ctx.newPage();
+    const b = await ctx.newPage();
+    await Promise.all([a.goto('https://www.twitch.tv/dupe'), b.goto('https://www.twitch.tv/popout/dupe/chat')]);
+    await a.waitForTimeout(6000);
+    const clicks = [await a.evaluate(() => window.__claimed), await b.evaluate(() => window.__claimed)];
+    const after = await sw.evaluate(async () => (await chrome.storage.local.get('history')).history.filter(h => h.channel === 'dupe').length);
+    await a.close(); await b.close();
+    check('one chest claimed in two tabs of a channel is counted once', clicks[0] === 1 && clicks[1] === 1 && after - before === 1,
+      `clicks=${clicks.join('+')}, recorded=${after - before}`);
+  }
+
+  // player recovery must not press the mature-content warning when skipping it is off
+  {
+    const setMature = on => sw.evaluate(async on => {
+      const { settings } = await chrome.storage.sync.get('settings');
+      await chrome.storage.sync.set({ settings: { ...settings, matureGate: on, autoRecover: true } });
+    }, on);
+    await setMature(false);
+    const p = await ctx.newPage();
+    await p.goto('https://www.twitch.tv/matureoverlay');
+    await p.waitForTimeout(4000);
+    const pressedWhenOff = await p.evaluate(() => window.__mature);
+    await setMature(true);
+    await p.waitForTimeout(3000);
+    const pressedWhenOn = await p.evaluate(() => window.__mature);
+    await p.close();
+    check('mature warning: untouched when its switch is off, passed when on', pressedWhenOff === undefined && pressedWhenOn === 1,
+      `off=${pressedWhenOff}, on=${pressedWhenOn}`);
+    const sub = await ctx.newPage();
+    await sub.goto('https://www.twitch.tv/subonly');
+    await sub.waitForTimeout(4000);
+    const subscribed = await sub.evaluate(() => window.__subscribe);
+    await sub.close();
+    check('player recovery ignores overlays without a retry button', subscribed === undefined, `pressed=${subscribed}`);
+    // the real reload button: found by its text in Russian, by its refresh icon in any language
+    const pressed = {};
+    for (const lang of ['ru', 'ja']) {
+      const pg = await ctx.newPage();
+      await pg.goto(`https://www.twitch.tv/reload${lang}`);
+      await pg.waitForTimeout(3000);
+      pressed[lang] = await pg.evaluate(() => window.__reload);
+      await pg.close();
+    }
+    check("Twitch's reload-player button is pressed in any language", pressed.ru === 1 && pressed.ja === 1, JSON.stringify(pressed));
+  }
+
+  // different drops claimed seconds apart may share a title: all of them count
+  {
+    const added = await sw.evaluate(async () => {
+      const before = (await chrome.storage.local.get('stats')).stats.total.drops;
+      const now = Date.now();
+      recordClaim({ kind: 'drops', channel: '', title: 'Supply Box', at: now });
+      await recordClaim({ kind: 'drops', channel: '', title: 'Supply Box', at: now + 2000 });
+      return (await chrome.storage.local.get('stats')).stats.total.drops - before;
+    });
+    check('two drops with the same title in one pass both count', added === 2, `added=${added}`);
+  }
 
   // retention: a flood of points must not push old drops out; daily totals kept for a year
   const kept = await sw.evaluate(async () => {
@@ -474,7 +598,7 @@ const check = (name, ok, extra = '') => {
     const stats = GLINT.emptyStats();
     for (let i = 1; i <= 400; i++) stats.days[GLINT.dayKey(now - i * 864e5)] = { points: 1, moments: 0, drops: 0 };
     await chrome.storage.local.set({ stats, history });
-    await recordClaim({ kind: 'points', channel: 'x', amount: 50, at: now });
+    await recordClaim({ kind: 'points', channel: 'y', amount: 50, at: now }); // another channel: same-channel claims within a minute are duplicates
     const after = await chrome.storage.local.get(['stats', 'history']);
     await chrome.storage.local.set(saved);
     return [after.history.filter(h => h.kind === 'points').length, after.history.filter(h => h.kind === 'drops').length,
@@ -492,9 +616,22 @@ const check = (name, ok, extra = '') => {
     const [download] = await Promise.all([p.waitForEvent('download'), p.click('#exportBtn')]);
     const file = path.join(out, 'export.json');
     await download.saveAs(file);
+    // reset must also forget avatars, the drops pace and self-check notes (PRIVACY.md says so)
+    const savedAvatars = await sw.evaluate(async () => {
+      const { avatars } = await chrome.storage.local.get('avatars');
+      await chrome.storage.local.set({ dropsCheck: { idle: 2, nextAt: Date.now() } });
+      await chrome.storage.session.set({ health: { 'noBonus:points': { issue: 'noBonus', kind: 'points', channel: 'x', at: Date.now() } } });
+      return avatars;
+    });
     await p.click('#resetBtn'); await p.click('#resetBtn');
     await p.waitForTimeout(400);
     const afterReset = await sw.evaluate(async () => (await chrome.storage.local.get('stats')).stats.total.points);
+    const leftovers = await sw.evaluate(async () => ({
+      ...(await chrome.storage.local.get(['avatars', 'dropsCheck'])), ...(await chrome.storage.session.get('health'))
+    }));
+    check('reset statistics also forgets avatars, drops pace and self-check notes',
+      Object.keys(leftovers).length === 0 && Object.keys(savedAvatars || {}).length > 0, Object.keys(leftovers).join(',') || 'nothing left');
+    await sw.evaluate(a => chrome.storage.local.set({ avatars: a }), savedAvatars); // later checks use them
 
     const junk = path.join(out, 'not-glint.json');
     fs.writeFileSync(junk, JSON.stringify({ hello: 'world' }));
@@ -555,7 +692,7 @@ const check = (name, ok, extra = '') => {
       const s = getComputedStyle(f);
       return s.opacity === '0' && s.pointerEvents === 'none';
     });
-    await new Promise(r => setTimeout(r, 27000));
+    await new Promise(r => setTimeout(r, 40000)); // the frame reports after 30 s plus click checks
     const after = await sw.evaluate(async () => {
       const { stats, dropsCheck } = await chrome.storage.local.get(['stats', 'dropsCheck']);
       return { drops: stats.total.drops, idle: dropsCheck && dropsCheck.idle };
