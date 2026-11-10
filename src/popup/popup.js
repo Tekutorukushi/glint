@@ -6,6 +6,21 @@
   const $ = id => document.getElementById(id);
   const locale = chrome.i18n.getUILanguage();
   const fmt = n => Number(n || 0).toLocaleString(locale);
+  // From 100 000 on: 123к / 1,2 млн (rounded down, never overstated). Exact value goes in a title.
+  const oneDecimal = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+  function fmtShort(n) {
+    n = Math.max(0, Math.floor(Number(n) || 0));
+    if (n < 1e5) return fmt(n);
+    if (n < 1e6) return t('shortThousands', [fmt(Math.floor(n / 1e3))]);
+    return t('shortMillions', [oneDecimal.format(Math.floor(n / 1e5) / 10)]);
+  }
+  /** Put a possibly shortened number into an element, with the exact one on hover. */
+  function setNumber(el, n) {
+    const short = fmtShort(n);
+    el.textContent = short;
+    if (short !== fmt(n)) el.title = fmt(n);
+    else el.removeAttribute('title');
+  }
 
   let settings = { ...DEFAULT_SETTINGS };
   let stats = emptyStats();
@@ -189,10 +204,25 @@
   const loadNotice = () => chrome.storage.session.get('health').then(({ health }) => renderNotice(health));
 
   // ------------------------------------------------------------ overview
+  // Moments and drops as two small icon + number pairs (same icons as in History); the full
+  // sentence ("Moments: 2, drops: 1") is the tooltip and what screen readers hear.
+  function setExtra(el, moments, drops) {
+    const full = t('todayExtra', [fmt(moments || 0), fmt(drops || 0)]);
+    el.title = full;
+    el.innerHTML =
+      `<span class="stat" aria-hidden="true"><svg viewBox="5 5 14 14">${ICONS.moments}</svg><span></span></span>` +
+      `<span class="stat" aria-hidden="true"><svg viewBox="5 5 14 14">${ICONS.drops}</svg><span></span></span>` +
+      '<span class="sr-only"></span>';
+    const nums = el.querySelectorAll('.stat > span');
+    nums[0].textContent = fmtShort(moments);
+    nums[1].textContent = fmtShort(drops);
+    el.querySelector('.sr-only').textContent = full;
+  }
+
   function renderToday() {
     const today = stats.days[dayKey()] || { points: 0, moments: 0, drops: 0 };
     const value = $('todayPoints');
-    value.textContent = fmt(today.points);
+    setNumber(value, today.points);
     if (lastToday != null && today.points > lastToday) {
       const wrap = value.parentElement;
       wrap.classList.remove('bump');
@@ -200,8 +230,9 @@
       wrap.classList.add('bump');
     }
     lastToday = today.points;
-    $('todayExtra').textContent = t('todayExtra', [fmt(today.moments || 0), fmt(today.drops || 0)]);
-    $('totalPoints').textContent = fmt(stats.total.points);
+    setExtra($('todayExtra'), today.moments, today.drops);
+    setNumber($('totalPoints'), stats.total.points);
+    setExtra($('totalExtra'), stats.total.moments, stats.total.drops);
   }
 
   function lastDays(n) {
@@ -383,7 +414,7 @@
       a.textContent = c.name;
       const num = document.createElement('span');
       num.className = 'num';
-      num.textContent = fmt(c.points);
+      setNumber(num, c.points);
       const meter = document.createElement('span');
       meter.className = 'meter';
       const fill = document.createElement('i');
@@ -449,7 +480,7 @@
       what.append(b, small);
       const num = document.createElement('span');
       num.className = 'num';
-      num.textContent = fmt(c.points);
+      setNumber(num, c.points);
       row.append(avatarEl(c.name), what, num);
       row.addEventListener('click', () => showChannelHistory(c.name));
       li.append(row);

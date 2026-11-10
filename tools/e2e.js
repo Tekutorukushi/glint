@@ -289,6 +289,14 @@ const check = (name, ok, extra = '') => {
     const totalShown = await p.textContent('#totalPoints');
     const totalStored = await sw.evaluate(async () => (await chrome.storage.local.get('stats')).stats.total.points);
     check('all-time total on the today card', totalShown === totalStored.toLocaleString('en-US'), `${totalShown} vs ${totalStored}`);
+    const extra = await p.evaluate(() => ({
+      text: document.querySelector('#totalExtra .sr-only').textContent,
+      icons: [...document.querySelectorAll('#totalExtra .stat > span')].map(s => s.textContent).join('/')
+    }));
+    const totals = await sw.evaluate(async () => (await chrome.storage.local.get('stats')).stats.total);
+    check('all-time moments and drops next to the total',
+      extra.text === `Moments: ${totals.moments}, drops: ${totals.drops}` && extra.icons === `${totals.moments}/${totals.drops}`,
+      `${extra.text} | ${extra.icons}`);
     await p.click('#chartRange [data-days="30"]');
     await p.waitForTimeout(300);
     await p.hover('.chart .col:nth-of-type(26) .hit');
@@ -363,6 +371,32 @@ const check = (name, ok, extra = '') => {
       noLink && title.includes(String(total)) && rows === total && firstByPoints === 'xqc' && found === 10 && nothing &&
       firstByName === 'jynxzi' && firstRecent !== firstByName && historyOn && chip && onlyThat && chipGone,
       `noLink=${noLink}, title="${title}", rows=${rows}/${total}, top=${firstByPoints}, found=${found}, nothing=${nothing}, az=${firstByName}, recent=${firstRecent}, history=${historyOn}, chip=${chip}, only=${onlyThat}, cleared=${chipGone}`);
+  }
+
+  // big numbers: from 100 000 on they are shortened (rounded down), exact value on hover
+  {
+    const saved = await sw.evaluate(async () => {
+      const saved = await chrome.storage.local.get('stats');
+      const stats = structuredClone(saved.stats);
+      stats.days[GLINT.dayKey()].points = 99999;
+      stats.total.points = 1234567;
+      stats.channels.xqc.points = 123999;
+      await chrome.storage.local.set({ stats });
+      return saved;
+    });
+    const p = await ctx.newPage();
+    await p.setViewportSize({ width: 360, height: 580 });
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.click('#tab-overview');
+    await p.waitForTimeout(400);
+    const got = await p.evaluate(() => [
+      document.querySelector('#todayPoints').textContent,
+      document.querySelector('#totalPoints').textContent, document.querySelector('#totalPoints').title,
+      document.querySelector('.channel .num').textContent, document.querySelector('.channel .num').title]);
+    await p.close();
+    await sw.evaluate(s => chrome.storage.local.set(s), saved);
+    check('big numbers shortened from 100 000, exact on hover',
+      JSON.stringify(got) === JSON.stringify(['99,999', '1.2M', '1,234,567', '123K', '123,999']), got.join(' | '));
   }
 
   // channel detection shared by content, popup and background

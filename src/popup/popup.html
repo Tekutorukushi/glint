@@ -37,14 +37,17 @@
     <!-- Overview -->
     <section class="panel" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
       <div class="today">
-        <div>
+        <div class="today-main">
           <p class="today-label" data-i18n="todayLabel"></p>
-          <p class="today-value"><span id="todayPoints">0</span><span class="today-unit" data-i18n="pointsUnit"></span></p>
-          <p class="today-extra" id="todayExtra"></p>
+          <p class="today-value"><span id="todayPoints">0</span></p>
         </div>
         <div class="today-total">
           <p class="today-label" data-i18n="totalLabel"></p>
           <p class="total-value" id="totalPoints">0</p>
+        </div>
+        <div class="today-foot">
+          <p class="today-extra" id="todayExtra"></p>
+          <p class="today-extra total-extra" id="totalExtra"></p>
         </div>
       </div>
 

@@ -198,13 +198,20 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
   100% { color: inherit; transform: none; }
 }
 #todayPoints { display: inline-block; }
-.today-unit { font-size: 14px; font-weight: 500; letter-spacing: 0; color: var(--ink-2); }
 .today-extra { margin-top: 6px; color: var(--ink-2); font-size: 12px; font-variant-numeric: tabular-nums; }
-/* all-time total: top right of the card, clearly secondary to today's number */
-.today { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; }
-/* with big numbers the unit moves under the number instead of pushing the total out */
-.today-value { flex-wrap: wrap; row-gap: 0; }
+/* Two rows: today's number | all-time total, then today's moments/drops | all-time ones.
+   The total is clearly secondary; the bottom line is shared so it doesn't squeeze the number. */
+.today { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: start; }
 .today-total { text-align: right; }
+.today-foot { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: end; gap: 12px; }
+.today-foot .today-extra { display: flex; gap: 12px; }
+.stat { display: inline-flex; align-items: center; gap: 4px; }
+.stat svg { width: 14px; height: 14px; overflow: visible; }
+.stat .mark { fill: none; stroke: var(--brass-ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
 .total-value { margin-top: 4px; font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
 /* ---------- chart ---------- */

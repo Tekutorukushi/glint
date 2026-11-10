@@ -365,5 +365,23 @@
   },
   "totalLabel": {
     "message": "All time"
+  },
+  "shortThousands": {
+    "message": "$N$K",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "123"
+      }
+    }
+  },
+  "shortMillions": {
+    "message": "$N$M",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "1.2"
+      }
+    }
   }
 }

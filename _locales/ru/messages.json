@@ -365,5 +365,23 @@
   },
   "totalLabel": {
     "message": "Всего"
+  },
+  "shortThousands": {
+    "message": "$N$к",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "123"
+      }
+    }
+  },
+  "shortMillions": {
+    "message": "$N$ млн",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "1,2"
+      }
+    }
   }
 }
