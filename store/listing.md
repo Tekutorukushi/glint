@@ -74,7 +74,7 @@ Glint automates claiming Twitch channel rewards (channel points bonus, moments a
 
 **Data usage:** no user data is collected or transmitted. Не отмечать ни одного типа данных и поставить все три подтверждения (не продаём данные, не используем их не по назначению, не используем для кредитоспособности).
 
-**Privacy policy URL:** нужна публичная ссылка на `PRIVACY.md` (например, GitHub Pages или ссылка на файл в публичном репозитории).
+**Privacy policy URL:** https://github.com/Tekutorukushi/glint/blob/main/PRIVACY.md — открывается только если репозиторий публичный (проверить в окне инкогнито).
 
 ## Перед отправкой
 
