@@ -44,7 +44,13 @@
     }
   },
   "chartTitle": {
-    "message": "Points over the last 7 days"
+    "message": "Points over the last $N$ days",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "7"
+      }
+    }
   },
   "channelsTitle": {
     "message": "Top channels"
@@ -289,5 +295,14 @@
   },
   "statusLineFiltered": {
     "message": "Open channels are excluded by your channel list"
+  },
+  "chartRangeOption": {
+    "message": "$N$ days",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "14"
+      }
+    }
   }
 }

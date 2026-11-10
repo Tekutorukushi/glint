@@ -219,6 +219,36 @@ const check = (name, ok, extra = '') => {
     console.log(scheme, 'popup errors:', perr);
     await p.close();
   }
+
+  // chart period: 7 / 14 / 30 days, remembered between popup openings
+  {
+    const p = await ctx.newPage();
+    await p.setViewportSize({ width: 360, height: 580 });
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.click('#tab-overview');
+    await p.waitForTimeout(300);
+    const bars7 = await p.locator('.chart .col').count();
+    await p.click('#chartRange [data-days="30"]');
+    await p.waitForTimeout(300);
+    await p.hover('.chart .col:nth-of-type(26) .hit');
+    await p.waitForTimeout(300);
+    await p.screenshot({ path: `${out}/chart-30.png` });
+    const bars30 = await p.locator('.chart .col').count();
+    const labels30 = await p.locator('.chart .axis').count();
+    await p.reload();
+    await p.waitForTimeout(400);
+    const remembered = await p.locator('.chart .col').count();
+    const title = await p.textContent('#chartTitle');
+    check('chart period 7 → 30, labels thinned, remembered',
+      bars7 === 7 && bars30 === 30 && labels30 === 6 && remembered === 30 && title.includes('30'),
+      `${bars7},${bars30},${labels30},${remembered},"${title}"`);
+    await p.click('#chartRange [data-days="14"]');
+    await p.waitForTimeout(300);
+    await p.screenshot({ path: `${out}/chart-14.png` });
+    await p.click('#chartRange [data-days="7"]');
+    await p.close();
+  }
+
   // channel detection shared by content, popup and background
   const names = await sw.evaluate(() => ['https://www.twitch.tv/Shroud', '/popout/xqc/chat', '/following', 'chrome-extension://abc/src/popup.html',
     '/directory/category/x', '/drops/inventory', '/moderator/kaicenat', '/'].map(GLINT.channelFromPath));

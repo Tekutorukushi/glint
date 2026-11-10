@@ -2,8 +2,8 @@
 :root {
   /* motion: one curve and two speeds for everything */
   --ease: cubic-bezier(.2, .8, .2, 1);
-  --fast: .16s;
-  --slow: .28s;
+  --fast: .2s;
+  --slow: .3s;
   --bg: #0F1F1D;
   --surface: #152C29;
   --raised: #1C3A35;
@@ -102,7 +102,7 @@ input[role="switch"] {
   border-radius: 11px;
   background: var(--raised);
   box-shadow: inset 0 0 0 1px var(--line);
-  transition: background 0.2s;
+  transition: background var(--fast) var(--ease);
 }
 .switch::after {
   content: "";
@@ -113,7 +113,7 @@ input[role="switch"] {
   height: 16px;
   border-radius: 50%;
   background: var(--ink-3);
-  transition: transform 0.2s cubic-bezier(.2,.8,.2,1), background 0.2s;
+  transition: transform var(--fast) var(--ease), background var(--fast) var(--ease);
 }
 input[role="switch"]:checked + .switch { background: var(--brass); box-shadow: none; }
 input[role="switch"]:checked + .switch::after { transform: translateX(14px); background: var(--on-brass); }
@@ -192,7 +192,7 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
-.today-value.bump #todayPoints { animation: bump 0.6s cubic-bezier(.2,.8,.2,1); }
+.today-value.bump #todayPoints { animation: bump var(--slow) var(--ease); }
 @keyframes bump {
   0% { color: var(--brass-hi); transform: translateY(4px); }
   100% { color: inherit; transform: none; }
@@ -204,6 +204,12 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 /* ---------- chart ---------- */
 .chart { position: relative; margin: 0 0 16px; }
 .chart figcaption { color: var(--ink-2); font-size: 12px; margin: 0 2px; }
+.chart-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.segmented.seg-mini {
+  display: inline-grid; grid-template-columns: repeat(3, auto);
+  margin: 0; padding: 2px; border-radius: 9px;
+}
+.seg-mini button { min-width: 30px; padding: 2px 8px; border-radius: 7px; font-size: 11.5px; font-variant-numeric: tabular-nums; }
 .chart-plot svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart .gridline { stroke: var(--grid); stroke-width: 1; }
 .chart .bar { fill: var(--bar); }

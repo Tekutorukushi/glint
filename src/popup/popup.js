@@ -218,19 +218,52 @@
     return [1, 2, 2.5, 5, 10].map(m => m * p).find(m => m >= v);
   }
 
+  // ------------------------------------------------------------ chart period: 7 / 14 / 30 days
+  const RANGES = [7, 14, 30];
+  const rangeButtons = Array.from(document.querySelectorAll('#chartRange button'));
+  let chartDays = 7;
+  try { chartDays = RANGES.includes(+localStorage.getItem('glint-chart-days')) ? +localStorage.getItem('glint-chart-days') : 7; } catch (e) { /* ignore */ }
+  function setChartDays(n) {
+    chartDays = n;
+    try { localStorage.setItem('glint-chart-days', String(n)); } catch (e) { /* ignore */ }
+    renderChart();
+  }
+  rangeButtons.forEach((b, i) => {
+    b.setAttribute('aria-label', t('chartRangeOption', [b.dataset.days]));
+    b.addEventListener('click', () => setChartDays(+b.dataset.days));
+    b.addEventListener('keydown', e => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      const next = rangeButtons[(i + d + rangeButtons.length) % rangeButtons.length];
+      setChartDays(+next.dataset.days);
+      next.focus();
+    });
+  });
+
   function renderChart() {
-    const days = lastDays(7);
+    const title = t('chartTitle', [String(chartDays)]);
+    $('chartTitle').textContent = title;
+    rangeButtons.forEach(b => {
+      const on = +b.dataset.days === chartDays;
+      b.setAttribute('aria-checked', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    $('tooltip').hidden = true;
+
+    const days = lastDays(chartDays);
     const W = 328, H = 150, top = 34, bottom = 22, plotH = H - top - bottom; // headroom for the tooltip
     const max = niceMax(Math.max(...days.map(d => d.value)));
     const slot = W / days.length;
-    const barW = 18;
-    const dayFmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    const barW = Math.min(18, slot * 0.62);
+    // 7 days: weekdays; 14: every date; 30: every 5th date counting back from today
+    const dayFmt = new Intl.DateTimeFormat(locale, chartDays === 7 ? { weekday: 'short' } : { day: 'numeric' });
+    const labelled = i => chartDays !== 30 || (days.length - 1 - i) % 5 === 0;
     const fullFmt = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' });
     const ns = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.setAttribute('role', 'img');
-    svg.setAttribute('aria-label', t('chartTitle'));
+    svg.setAttribute('aria-label', title);
 
     // recessive gridlines: baseline + half + max
     [0, 0.5, 1].forEach(f => {
@@ -249,7 +282,7 @@
       const cx = slot * i + slot / 2;
       const h = d.value ? Math.max(4, (d.value / max) * plotH) : 2;
       const y = top + plotH - h;
-      const r = d.value ? Math.min(4, h / 2) : 1;
+      const r = d.value ? Math.min(4, h / 2, barW / 2) : 1;
       const path = document.createElementNS(ns, 'path');
       const x0 = cx - barW / 2, x1 = cx + barW / 2, yb = top + plotH;
       // rounded data-end on top, square on the baseline
@@ -263,7 +296,7 @@
       label.setAttribute('y', H - 6);
       label.setAttribute('text-anchor', 'middle');
       label.textContent = dayFmt.format(d.date);
-      g.appendChild(label);
+      labelled(i) && g.appendChild(label);
 
       const hit = document.createElementNS(ns, 'rect');
       hit.setAttribute('class', 'hit');

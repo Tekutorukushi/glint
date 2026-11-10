@@ -98,7 +98,7 @@
           box-shadow: 0 0 0 1px rgba(217,164,65,.35), 0 12px 32px rgba(4,14,13,.45);
           font: 500 13px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
           transform: translateY(12px); opacity: 0;
-          transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .35s;
+          transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s;
         }
         .toast.in { transform: none; opacity: 1; }
         .coin { width: 28px; height: 28px; }

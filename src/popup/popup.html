@@ -43,7 +43,14 @@
       </div>
 
       <figure class="chart">
-        <figcaption data-i18n="chartTitle"></figcaption>
+        <figcaption class="chart-head">
+          <span id="chartTitle"></span>
+          <span class="segmented seg-mini" role="radiogroup" id="chartRange" aria-labelledby="chartTitle">
+            <button role="radio" aria-checked="true" data-days="7">7</button>
+            <button role="radio" aria-checked="false" data-days="14">14</button>
+            <button role="radio" aria-checked="false" data-days="30">30</button>
+          </span>
+        </figcaption>
         <div class="chart-plot" id="chart"></div>
         <div class="tooltip" id="tooltip" role="status" hidden></div>
       </figure>

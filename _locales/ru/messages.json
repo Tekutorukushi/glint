@@ -44,7 +44,13 @@
     }
   },
   "chartTitle": {
-    "message": "Баллы за последние 7 дней"
+    "message": "Баллы за последние $N$ дней",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "7"
+      }
+    }
   },
   "channelsTitle": {
     "message": "Лучшие каналы"
@@ -289,5 +295,14 @@
   },
   "statusLineFiltered": {
     "message": "На открытых каналах сбор выключен списком каналов"
+  },
+  "chartRangeOption": {
+    "message": "$N$ дней",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "14"
+      }
+    }
   }
 }
