@@ -310,5 +310,74 @@
   },
   "setAvatarsHint": {
     "message": "Loads channel pictures from Twitch's image server. Off: first letters instead"
+  },
+  "allChannels": {
+    "message": "All channels ($N$)",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "104"
+      }
+    }
+  },
+  "allChannelsTitle": {
+    "message": "Channels with points: $N$",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "104"
+      }
+    }
+  },
+  "searchChannel": {
+    "message": "Search channels"
+  },
+  "searchNothing": {
+    "message": "No channels found"
+  },
+  "sortBy": {
+    "message": "Sort by"
+  },
+  "sortPoints": {
+    "message": "Points"
+  },
+  "sortRecent": {
+    "message": "Recent"
+  },
+  "sortName": {
+    "message": "A–Z"
+  },
+  "channelMoments": {
+    "message": "moments: $N$",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "channelHistory": {
+    "message": "History of $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "shroud"
+      }
+    }
+  },
+  "historyChannel": {
+    "message": "Channel: $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "shroud"
+      }
+    }
+  },
+  "clearFilter": {
+    "message": "Show all channels"
+  },
+  "tabChannels": {
+    "message": "Channels"
   }
 }

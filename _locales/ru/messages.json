@@ -310,5 +310,74 @@
   },
   "setAvatarsHint": {
     "message": "Загружает картинки каналов с сервера Twitch. Если выключить, будут буквы"
+  },
+  "allChannels": {
+    "message": "Все каналы ($N$)",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "104"
+      }
+    }
+  },
+  "allChannelsTitle": {
+    "message": "Каналов с баллами: $N$",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "104"
+      }
+    }
+  },
+  "searchChannel": {
+    "message": "Поиск канала"
+  },
+  "searchNothing": {
+    "message": "Ничего не найдено"
+  },
+  "sortBy": {
+    "message": "Сортировка"
+  },
+  "sortPoints": {
+    "message": "Баллы"
+  },
+  "sortRecent": {
+    "message": "Недавние"
+  },
+  "sortName": {
+    "message": "А–Я"
+  },
+  "channelMoments": {
+    "message": "моментов: $N$",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "channelHistory": {
+    "message": "История канала $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "shroud"
+      }
+    }
+  },
+  "historyChannel": {
+    "message": "Канал: $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "shroud"
+      }
+    }
+  },
+  "clearFilter": {
+    "message": "Показать все каналы"
+  },
+  "tabChannels": {
+    "message": "Каналы"
   }
 }

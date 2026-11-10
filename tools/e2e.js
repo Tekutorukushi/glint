@@ -307,6 +307,61 @@ const check = (name, ok, extra = '') => {
     await p.close();
   }
 
+  // all channels: a long list with search, sorting, and a jump to that channel's history
+  {
+    const saved = await sw.evaluate(async () => {
+      const saved = await chrome.storage.local.get('stats');
+      const stats = structuredClone(saved.stats);
+      const now = Date.now();
+      for (let i = 0; i < 120; i++) {
+        stats.channels[`viewer_${String(i).padStart(3, '0')}`] = { points: 10 + i, moments: i % 7 === 0 ? 1 : 0, drops: 0, last: now - i * 36e5 };
+      }
+      await chrome.storage.local.set({ stats });
+      return saved;
+    });
+    const total = await sw.evaluate(async () => Object.values((await chrome.storage.local.get('stats')).stats.channels)
+      .filter(c => (c.points || 0) > 0 || (c.moments || 0) > 0).length);
+    const p = await ctx.newPage();
+    await p.setViewportSize({ width: 360, height: 580 });
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.click('#tab-overview');
+    await p.waitForTimeout(300);
+    const btnText = await p.textContent('#allChannelsBtn');
+    await p.click('#allChannelsBtn');
+    await p.waitForTimeout(300);
+    const onTab = await p.getAttribute('#tab-channels', 'aria-selected') === 'true';
+    // reopening the popup restores the tab and builds the list
+    await p.reload();
+    await p.waitForTimeout(500);
+    const rows = await p.locator('#allChannelList .ch-row').count();
+    const firstByPoints = await p.textContent('#allChannelList li:first-child b');
+    await p.screenshot({ path: `${out}/all-channels.png` });
+    await p.fill('#channelSearch', 'viewer_11');
+    const found = await p.locator('#allChannelList .ch-row').count(); // viewer_110..viewer_119
+    await p.fill('#channelSearch', 'zzz');
+    const nothing = await p.isVisible('#allChannelsEmpty');
+    await p.fill('#channelSearch', '');
+    await p.click('#channelSort [data-sort="name"]');
+    const firstByName = await p.textContent('#allChannelList li:first-child b');
+    await p.click('#channelSort [data-sort="recent"]');
+    const firstRecent = await p.textContent('#allChannelList li:first-child b');
+    await p.fill('#channelSearch', 'kaicenat');
+    await p.click('#allChannelList .ch-row');
+    await p.waitForTimeout(300);
+    const historyOn = await p.getAttribute('#tab-history', 'aria-selected') === 'true';
+    const chip = await p.isVisible('#historyChannelBar');
+    const onlyThat = await p.evaluate(() => [...document.querySelectorAll('#historyList .event small')].every(s => s.textContent.includes('kaicenat')));
+    await p.screenshot({ path: `${out}/history-channel.png` });
+    await p.click('#historyChannelClear');
+    const chipGone = await p.isHidden('#historyChannelBar');
+    await p.close();
+    await sw.evaluate(s => chrome.storage.local.set(s), saved);
+    check('channels tab: full list, search, 3 sorts, channel history filter',
+      btnText.includes(String(total)) && onTab && rows === total && firstByPoints === 'xqc' && found === 10 && nothing &&
+      firstByName === 'jynxzi' && firstRecent !== firstByName && historyOn && chip && onlyThat && chipGone,
+      `btn="${btnText}", tab=${onTab}, rows=${rows}/${total}, top=${firstByPoints}, found=${found}, nothing=${nothing}, az=${firstByName}, recent=${firstRecent}, history=${historyOn}, chip=${chip}, only=${onlyThat}, cleared=${chipGone}`);
+  }
+
   // channel detection shared by content, popup and background
   const names = await sw.evaluate(() => ['https://www.twitch.tv/Shroud', '/popout/xqc/chat', '/following', 'chrome-extension://abc/src/popup.html',
     '/directory/category/x', '/drops/inventory', '/moderator/kaicenat', '/'].map(GLINT.channelFromPath));

@@ -12,6 +12,7 @@
   let history = [];
   let avatars = {};
   let historyKind = 'all';
+  let historyChannel = '';
   let lastToday = null;
 
   // ------------------------------------------------------------ i18n
@@ -20,7 +21,7 @@
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
   document.querySelectorAll('[data-i18n-label]').forEach(el => {
     el.setAttribute('aria-label', t(el.dataset.i18nLabel));
-    el.title = t(el.dataset.i18nLabel);
+    if (el.tagName === 'BUTTON') el.title = t(el.dataset.i18nLabel); // icon buttons get a tooltip
   });
   $('version').textContent = t('versionLine', [chrome.runtime.getManifest().version]);
 
@@ -33,6 +34,8 @@
       b.tabIndex = on ? 0 : -1;
       $(b.getAttribute('aria-controls')).hidden = !on;
     });
+    // the channel list is only built while visible; after this script has fully run
+    if (tab.id === 'tab-channels') queueMicrotask(() => renderAllChannels());
     try { localStorage.setItem('glint-tab', tab.id); } catch (e) { /* ignore */ }
   }
   tabs.forEach((b, i) => {
@@ -389,7 +392,96 @@
       li.append(avatar, a, num, meter);
       ol.appendChild(li);
     });
+    const total = allChannelEntries().length;
+    const more = $('allChannelsBtn');
+    more.hidden = total <= list.length;
+    more.textContent = t('allChannels', [fmt(total)]);
+    renderAllChannels(); // skipped while that screen is closed
   }
+
+  // ------------------------------------------------------------ all channels (sub-screen)
+  const SORTS = ['points', 'recent', 'name'];
+  const sortButtons = Array.from(document.querySelectorAll('#channelSort button'));
+  let channelSort = 'points';
+  try { SORTS.includes(localStorage.getItem('glint-channel-sort')) && (channelSort = localStorage.getItem('glint-channel-sort')); } catch (e) { /* ignore */ }
+
+  function allChannelEntries() {
+    return Object.entries(stats.channels)
+      .map(([name, c]) => ({ name, points: c.points || 0, moments: c.moments || 0, last: c.last || 0 }))
+      .filter(c => c.points > 0 || c.moments > 0);
+  }
+
+  function whenText(ts) {
+    if (!ts) return '';
+    const k = dayKey(ts);
+    const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(ts);
+    if (k === dayKey()) return `${t('dayToday')}, ${time}`;
+    if (k === dayKey(Date.now() - 864e5)) return `${t('dayYesterday')}, ${time}`;
+    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' }).format(ts);
+  }
+
+  function renderAllChannels() {
+    if ($('panel-channels').hidden) return;
+    const all = allChannelEntries();
+    $('allChannelsTitle').textContent = t('allChannelsTitle', [fmt(all.length)]);
+    sortButtons.forEach(b => {
+      const on = b.dataset.sort === channelSort;
+      b.setAttribute('aria-checked', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    const q = $('channelSearch').value.trim().toLowerCase().replace(/^@/, '');
+    const cmp = {
+      points: (a, b) => b.points - a.points || b.last - a.last,
+      recent: (a, b) => b.last - a.last,
+      name: (a, b) => a.name.localeCompare(b.name)
+    }[channelSort];
+    const list = all.filter(c => !q || c.name.includes(q)).sort(cmp);
+    $('allChannelsEmpty').hidden = list.length > 0;
+    $('allChannelList').replaceChildren(...list.map(c => {
+      const li = document.createElement('li');
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'ch-row';
+      row.title = t('channelHistory', [c.name]);
+      const what = document.createElement('span');
+      what.className = 'what';
+      const b = document.createElement('b');
+      b.textContent = c.name;
+      const small = document.createElement('small');
+      small.textContent = [whenText(c.last), c.moments ? t('channelMoments', [fmt(c.moments)]) : '']
+        .filter(Boolean).join(' · ');
+      what.append(b, small);
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = fmt(c.points);
+      row.append(avatarEl(c.name), what, num);
+      row.addEventListener('click', () => showChannelHistory(c.name));
+      li.append(row);
+      return li;
+    }));
+  }
+
+  // "All channels (N)" under the top five switches to the Channels tab
+  $('allChannelsBtn').addEventListener('click', () => {
+    selectTab($('tab-channels'));
+    document.querySelector('main').scrollTop = 0;
+  });
+  $('channelSearch').addEventListener('input', renderAllChannels);
+  sortButtons.forEach((b, i) => {
+    const pick = s => {
+      channelSort = s;
+      try { localStorage.setItem('glint-channel-sort', s); } catch (e) { /* ignore */ }
+      renderAllChannels();
+    };
+    b.addEventListener('click', () => pick(b.dataset.sort));
+    b.addEventListener('keydown', e => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      const next = sortButtons[(i + d + sortButtons.length) % sortButtons.length];
+      pick(next.dataset.sort);
+      next.focus();
+    });
+  });
 
   // ------------------------------------------------------------ history
   const ICONS = {
@@ -401,8 +493,11 @@
   function renderHistory() {
     const box = $('historyList');
     box.replaceChildren();
-    const items = history.filter(h => historyKind === 'all' || h.kind === historyKind);
+    const items = history.filter(h => (historyKind === 'all' || h.kind === historyKind) &&
+      (!historyChannel || h.channel === historyChannel));
     $('historyEmpty').hidden = items.length > 0;
+    $('historyChannelBar').hidden = !historyChannel;
+    $('historyChannelText').textContent = historyChannel ? t('historyChannel', [historyChannel]) : '';
     const dayFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' });
     const timeFmt = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' });
     const todayK = dayKey();
@@ -440,6 +535,18 @@
       box.appendChild(row);
     });
   }
+
+  // history of one channel, opened from the "all channels" screen
+  function showChannelHistory(name) {
+    historyChannel = name;
+    selectTab($('tab-history'));
+    renderHistory();
+    document.querySelector('main').scrollTop = 0;
+  }
+  $('historyChannelClear').addEventListener('click', () => {
+    historyChannel = '';
+    renderHistory();
+  });
 
   const filterButtons = Array.from(document.querySelectorAll('#historyFilter button'));
   filterButtons.forEach(b => b.addEventListener('click', () => {
