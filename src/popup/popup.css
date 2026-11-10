@@ -1,5 +1,9 @@
 /* Glint popup. Palette: brass on deep sea-green. */
 :root {
+  /* motion: one curve and two speeds for everything */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --fast: .16s;
+  --slow: .28s;
   --bg: #0F1F1D;
   --surface: #152C29;
   --raised: #1C3A35;
@@ -398,6 +402,42 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 .tabs button[aria-selected="true"] { color: var(--ink); }
 .tabs button[aria-selected="true"] svg { stroke: var(--brass-ink); }
 .tabs button:hover { color: var(--ink-2); }
+
+/* ---------- motion ---------- */
+/* every hover, press and state change eases instead of jumping */
+.btn, .segmented button, .tabs button, .notice-close, .chips button, .suggest, .row,
+.channel a, .add-channel input {
+  transition:
+    background-color var(--fast) var(--ease), color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease), text-decoration-color var(--fast) var(--ease),
+    transform var(--fast) var(--ease), opacity var(--fast) var(--ease);
+}
+.tabs svg { transition: stroke var(--fast) var(--ease), transform var(--slow) var(--ease); }
+.brand-coin { transition: filter var(--slow) var(--ease), opacity var(--slow) var(--ease); }
+.chart .bar { transition: fill var(--fast) var(--ease); }
+.meter i { transition: width var(--slow) var(--ease); }
+
+/* pressing gives a small, quick dip */
+.btn:active, .segmented button:active, .notice-close:active, .chips button:active { transform: scale(.96); }
+.tabs button:active svg { transform: scale(.9); }
+.tabs button[aria-selected="true"] svg { transform: translateY(-1px); }
+
+/* hover states that were missing */
+.row:hover { background: color-mix(in srgb, var(--raised) 55%, var(--surface)); }
+.segmented button:hover:not([aria-checked="true"]) { color: var(--ink); background: color-mix(in srgb, var(--raised) 45%, transparent); }
+.add-channel input:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent); }
+.add-channel input:focus { outline: none; box-shadow: inset 0 0 0 1px var(--brass); }
+
+/* underlines fade in instead of popping */
+.channel a, .suggest { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: transparent; }
+.channel a:hover, .suggest:hover { text-decoration-color: currentColor; }
+
+/* things that appear: panels, the notice, the chart tooltip */
+@keyframes rise { from { opacity: 0; transform: translateY(4px); } }
+.panel:not([hidden]) { animation: rise var(--slow) var(--ease); }
+.notice:not([hidden]) { animation: rise var(--slow) var(--ease); }
+.tooltip { transition: opacity var(--fast) var(--ease), left var(--fast) var(--ease), top var(--fast) var(--ease); }
+.tooltip[hidden] { display: block; opacity: 0; visibility: hidden; transition: opacity var(--fast) var(--ease), visibility 0s linear var(--fast); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
