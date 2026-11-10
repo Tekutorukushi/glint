@@ -6,7 +6,6 @@ const {
   DEFAULT_SETTINGS, HISTORY_MAX, DAYS_MAX, DROPS_INTERVAL_MIN, DROPS_MAX_INTERVAL_MIN, INVENTORY_URL,
   channelFromPath, dayKey, emptyStats
 } = GLINT;
-const AUTO_PARAM = 'glint=auto';
 
 async function getSettings() {
   const { settings } = await chrome.storage.sync.get('settings');
@@ -147,14 +146,24 @@ async function checkDrops(force = false) {
   if (!force && Date.now() < (dropsCheck.nextAt || 0)) return;
   const tabs = await chrome.tabs.query({ url: 'https://www.twitch.tv/*' });
   const inventory = tabs.find(t => t.url && t.url.startsWith(INVENTORY_URL));
-  if (!tabs.some(t => channelFromPath(t.url))) return; // no channel open, nothing earns drops
+  const channels = tabs.filter(t => channelFromPath(t.url));
+  if (!channels.length) return; // no channel open, nothing earns drops
   if (inventory) {
     if (!inventory.active) chrome.tabs.reload(inventory.id);
     return;
   }
-  const tab = await chrome.tabs.create({ url: `${INVENTORY_URL}?${AUTO_PARAM}`, active: false, index: 0 });
-  const { autoTabs = [] } = await chrome.storage.session.get('autoTabs');
-  await chrome.storage.session.set({ autoTabs: [...autoTabs, tab.id] });
+  // No new tab: ask an open channel tab to load the inventory in a hidden same-origin
+  // frame (twitch.tv allows that: X-Frame-Options SAMEORIGIN). Background tabs first,
+  // so the stream being watched isn't slowed down by loading another Twitch page.
+  channels.sort((a, b) => Number(a.active) - Number(b.active));
+  for (const tab of channels) {
+    try {
+      const res = await chrome.tabs.sendMessage(tab.id, { type: 'checkInventory' }, { frameId: 0 });
+      if (res && res.ok) return;
+    } catch (e) {
+      // no Glint script in that tab (opened before an update): try the next one
+    }
+  }
 }
 
 async function inventoryChecked(claimed) {
@@ -215,13 +224,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     recordIssue(msg);
     return;
   }
-  if (msg.type === 'inventoryDone' && sender.tab) {
-    chrome.storage.session.get('autoTabs').then(({ autoTabs = [] }) => {
-      if (!autoTabs.includes(sender.tab.id)) return;
-      chrome.storage.session.set({ autoTabs: autoTabs.filter(id => id !== sender.tab.id) });
-      chrome.tabs.remove(sender.tab.id).catch(() => {});
-      inventoryChecked(Number(msg.claimed) || 0);
-    });
+  // the hidden inventory frame finished: remember the result, let the tab remove the frame
+  if (msg.type === 'inventoryDone' && sender.tab && sender.frameId > 0) {
+    inventoryChecked(Number(msg.claimed) || 0);
+    chrome.tabs.sendMessage(sender.tab.id, { type: 'inventoryClose' }, { frameId: 0 }).catch(() => {});
     return;
   }
   if (msg.type === 'checkDropsNow') {
@@ -233,12 +239,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'sync' && changes.settings) updateBadge();
   if (area === 'local' && changes.stats && !changes.stats.newValue) updateBadge();
-});
-
-chrome.tabs.onRemoved.addListener(tabId => {
-  chrome.storage.session.get('autoTabs').then(({ autoTabs = [] }) => {
-    autoTabs.includes(tabId) && chrome.storage.session.set({ autoTabs: autoTabs.filter(id => id !== tabId) });
-  });
 });
 
 chrome.notifications.onClicked.addListener(id => {

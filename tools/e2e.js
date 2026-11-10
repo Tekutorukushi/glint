@@ -335,6 +335,32 @@ const check = (name, ok, extra = '') => {
   });
   check('history: 300 per kind, old drops survive; 366 days kept', JSON.stringify(kept) === '[300,5,366]', kept.join(','));
 
+  // drops check without a new tab: a channel tab loads the inventory in a hidden frame
+  {
+    await inv.close(); // the user's own inventory tab would be reloaded instead
+    const pagesBefore = ctx.pages().length;
+    const dropsBefore = await sw.evaluate(async () => ((await chrome.storage.local.get('stats')).stats.total.drops));
+    await sw.evaluate(() => checkDrops(true));
+    await new Promise(r => setTimeout(r, 2000));
+    const host = (await Promise.all(ctx.pages().map(async p => ({ p, n: await p.locator('iframe[src*="glint=auto"]').count().catch(() => 0) }))))
+      .find(x => x.n > 0);
+    const hidden = host && await host.p.evaluate(() => {
+      const f = document.querySelector('iframe[src*="glint=auto"]');
+      const s = getComputedStyle(f);
+      return s.opacity === '0' && s.pointerEvents === 'none';
+    });
+    await new Promise(r => setTimeout(r, 27000));
+    const after = await sw.evaluate(async () => {
+      const { stats, dropsCheck } = await chrome.storage.local.get(['stats', 'dropsCheck']);
+      return { drops: stats.total.drops, idle: dropsCheck && dropsCheck.idle };
+    });
+    const removed = host && await host.p.locator('iframe[src*="glint=auto"]').count() === 0;
+    const toasted = host && await host.p.evaluate(() => !!document.querySelector('glint-toasts'));
+    check('drops checked in a hidden frame: no new tab, drop claimed, toast in the tab, frame removed',
+      !!host && hidden && ctx.pages().length === pagesBefore && after.drops === dropsBefore + 1 && after.idle === 0 && removed && toasted,
+      `frame=${!!host}, hidden=${hidden}, pages=${ctx.pages().length - pagesBefore}, drops=${after.drops - dropsBefore}, idle=${after.idle}, removed=${removed}, toast=${toasted}`);
+  }
+
   // toggling master off propagates to page
   await sw.evaluate(async () => { const { settings } = await chrome.storage.sync.get('settings'); await chrome.storage.sync.set({ settings: { ...settings, enabled: false } }); });
   await tw.waitForTimeout(500);

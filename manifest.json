@@ -3,7 +3,7 @@
   "name": "__MSG_extName__",
   "short_name": "Glint",
   "description": "__MSG_extDescription__",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "default_locale": "en",
   "minimum_chrome_version": "111",
   "icons": {
@@ -35,7 +35,8 @@
     {
       "matches": ["https://www.twitch.tv/*"],
       "js": ["src/shared/defaults.js", "src/content/content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ]
 }

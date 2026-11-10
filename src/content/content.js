@@ -13,6 +13,9 @@
   const cooldowns = new Map();
   const isInventory = () => location.pathname.startsWith('/drops/inventory');
   const isAutoInventory = isInventory() && new URLSearchParams(location.search).get('glint') === 'auto';
+  // Inside frames Glint only works in its own hidden inventory frame (see inventory frame below).
+  const inFrame = window.top !== window;
+  if (inFrame && !isAutoInventory) return;
 
   // ------------------------------------------------------------------ helpers
   // After the extension is updated or reloaded, this script keeps running in tabs that were
@@ -228,7 +231,9 @@
         }
         dropsClaimed++;
         send({ type: 'claim', kind: 'drops', channel: '', title, at: Date.now() });
-        toast('drops', t('toastDrop'), title);
+        // in the hidden frame nobody would see a toast: the tab around it shows it
+        if (inFrame) window.parent.postMessage({ glint: 'dropToast', title }, location.origin);
+        else toast('drops', t('toastDrop'), title);
       });
     });
   }
@@ -324,6 +329,47 @@
     });
   }
 
+  // ------------------------------------------------------------------ inventory frame
+  // Instead of opening a tab, the background asks a channel tab to load the drops inventory
+  // in an invisible same-origin frame. Glint's script inside it claims the drops, reports
+  // 'inventoryDone' to the background, which tells this tab to remove the frame.
+  let inventoryFrame = null;
+  let inventoryTimer = null;
+  function openInventoryFrame() {
+    if (inventoryFrame) return;
+    const f = document.createElement('iframe');
+    f.src = `${GLINT.INVENTORY_URL}?glint=auto`;
+    f.title = 'Glint';
+    f.tabIndex = -1;
+    f.setAttribute('aria-hidden', 'true');
+    // laid out at a desktop size so Twitch renders the normal page, but invisible and inert
+    f.style.cssText = 'position:fixed;left:0;top:0;width:1100px;height:800px;border:0;' +
+      'opacity:0;pointer-events:none;z-index:-1;';
+    document.documentElement.appendChild(f);
+    inventoryFrame = f;
+    inventoryTimer = setTimeout(closeInventoryFrame, 60000); // safety net
+  }
+  function closeInventoryFrame() {
+    clearTimeout(inventoryTimer);
+    inventoryFrame && inventoryFrame.remove();
+    inventoryFrame = null;
+  }
+  if (!inFrame) {
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+      if (!msg || sender.id !== chrome.runtime.id) return;
+      if (msg.type === 'checkInventory') {
+        if (!settings.enabled || !settings.drops) return sendResponse({ ok: false });
+        openInventoryFrame();
+        sendResponse({ ok: true });
+      }
+      if (msg.type === 'inventoryClose') closeInventoryFrame();
+    });
+    window.addEventListener('message', e => {
+      if (!inventoryFrame || e.source !== inventoryFrame.contentWindow || e.origin !== location.origin) return;
+      if (e.data && e.data.glint === 'dropToast') toast('drops', t('toastDrop'), String(e.data.title || '').slice(0, 120));
+    });
+  }
+
   // ------------------------------------------------------------------ loop
   function tick() {
     if (!alive()) return stop();
@@ -369,7 +415,7 @@
     pushPageConfig();
     start();
     if (isAutoInventory) {
-      // background tab opened by Glint: give the page time to load and claim, then close it
+      // hidden frame opened by Glint: give the page time to load and claim, then report
       setTimeout(() => send({ type: 'inventoryDone', claimed: dropsClaimed }), 25000);
     }
   });

@@ -112,7 +112,7 @@
     "message": "Drops"
   },
   "setDropsHint": {
-    "message": "Checks your inventory in a background tab every 15–60 min while a stream is open"
+    "message": "While a stream is open, quietly checks your inventory every 15–60 min, no new tabs"
   },
   "groupPlayer": {
     "message": "Player"
