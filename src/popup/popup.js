@@ -201,7 +201,7 @@
     }
     lastToday = today.points;
     $('todayExtra').textContent = t('todayExtra', [fmt(today.moments || 0), fmt(today.drops || 0)]);
-    $('totalPoints').textContent = t('totalLine', [fmt(stats.total.points)]);
+    $('totalPoints').textContent = fmt(stats.total.points);
   }
 
   function lastDays(n) {
@@ -392,11 +392,7 @@
       li.append(avatar, a, num, meter);
       ol.appendChild(li);
     });
-    const total = allChannelEntries().length;
-    const more = $('allChannelsBtn');
-    more.hidden = total <= list.length;
-    more.textContent = t('allChannels', [fmt(total)]);
-    renderAllChannels(); // skipped while that screen is closed
+    renderAllChannels(); // skipped while the Channels tab is closed
   }
 
   // ------------------------------------------------------------ all channels (sub-screen)
@@ -461,11 +457,6 @@
     }));
   }
 
-  // "All channels (N)" under the top five switches to the Channels tab
-  $('allChannelsBtn').addEventListener('click', () => {
-    selectTab($('tab-channels'));
-    document.querySelector('main').scrollTop = 0;
-  });
   $('channelSearch').addEventListener('input', renderAllChannels);
   sortButtons.forEach((b, i) => {
     const pick = s => {

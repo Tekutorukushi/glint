@@ -200,6 +200,12 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 #todayPoints { display: inline-block; }
 .today-unit { font-size: 14px; font-weight: 500; letter-spacing: 0; color: var(--ink-2); }
 .today-extra { margin-top: 6px; color: var(--ink-2); font-size: 12px; font-variant-numeric: tabular-nums; }
+/* all-time total: top right of the card, clearly secondary to today's number */
+.today { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; }
+/* with big numbers the unit moves under the number instead of pushing the total out */
+.today-value { flex-wrap: wrap; row-gap: 0; }
+.today-total { text-align: right; }
+.total-value { margin-top: 4px; font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
 /* ---------- chart ---------- */
 .chart { position: relative; margin: 0 0 16px; }
@@ -279,13 +285,6 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 .empty { padding: 18px 8px; color: var(--ink-3); text-align: center; }
 
 /* ---------- all channels ---------- */
-.link-more {
-  display: flex; justify-content: space-between; align-items: center; width: 100%;
-  margin-top: 2px; padding: 9px 2px; border: 0; border-top: 1px solid var(--line);
-  background: none; color: var(--brass-ink); font-weight: 550; text-align: left; cursor: pointer;
-}
-.link-more::after { content: "→"; transition: transform var(--fast) var(--ease); }
-.link-more:hover::after { transform: translateX(3px); }
 .subhead { margin: 2px 2px 8px; }
 .subhead h2 { font-variant-numeric: tabular-nums; }
 .search {
@@ -476,7 +475,7 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 /* ---------- motion ---------- */
 /* every hover, press and state change eases instead of jumping */
 .btn, .segmented button, .tabs button, .notice-close, .chips button, .suggest, .row,
-.channel a, .add-channel input, .search, .ch-row, .filter-chip button, .link-more {
+.channel a, .add-channel input, .search, .ch-row, .filter-chip button {
   transition:
     background-color var(--fast) var(--ease), color var(--fast) var(--ease),
     box-shadow var(--fast) var(--ease), text-decoration-color var(--fast) var(--ease),

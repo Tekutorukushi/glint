@@ -37,9 +37,15 @@
     <!-- Overview -->
     <section class="panel" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
       <div class="today">
-        <p class="today-label" data-i18n="todayLabel"></p>
-        <p class="today-value"><span id="todayPoints">0</span><span class="today-unit" data-i18n="pointsUnit"></span></p>
-        <p class="today-extra" id="todayExtra"></p>
+        <div>
+          <p class="today-label" data-i18n="todayLabel"></p>
+          <p class="today-value"><span id="todayPoints">0</span><span class="today-unit" data-i18n="pointsUnit"></span></p>
+          <p class="today-extra" id="todayExtra"></p>
+        </div>
+        <div class="today-total">
+          <p class="today-label" data-i18n="totalLabel"></p>
+          <p class="total-value" id="totalPoints">0</p>
+        </div>
       </div>
 
       <figure class="chart">
@@ -58,11 +64,9 @@
       <div class="channels">
         <div class="section-head">
           <h2 data-i18n="channelsTitle"></h2>
-          <span class="muted" id="totalPoints"></span>
         </div>
         <ol class="channel-list" id="channelList"></ol>
         <p class="empty" id="channelsEmpty" data-i18n="channelsEmpty" hidden></p>
-        <button class="link-more" id="allChannelsBtn" type="button" hidden></button>
       </div>
     </section>
 

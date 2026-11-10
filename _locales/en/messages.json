@@ -55,14 +55,6 @@
   "channelsTitle": {
     "message": "Top channels"
   },
-  "totalLine": {
-    "message": "$N$ in total",
-    "placeholders": {
-      "n": {
-        "content": "$1"
-      }
-    }
-  },
   "channelsEmpty": {
     "message": "Points you collect will show up here, grouped by channel."
   },
@@ -311,15 +303,6 @@
   "setAvatarsHint": {
     "message": "Loads channel pictures from Twitch's image server. Off: first letters instead"
   },
-  "allChannels": {
-    "message": "All channels ($N$)",
-    "placeholders": {
-      "n": {
-        "content": "$1",
-        "example": "104"
-      }
-    }
-  },
   "allChannelsTitle": {
     "message": "Channels with points: $N$",
     "placeholders": {
@@ -379,5 +362,8 @@
   },
   "tabChannels": {
     "message": "Channels"
+  },
+  "totalLabel": {
+    "message": "All time"
   }
 }

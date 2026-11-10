@@ -55,14 +55,6 @@
   "channelsTitle": {
     "message": "Лучшие каналы"
   },
-  "totalLine": {
-    "message": "всего $N$",
-    "placeholders": {
-      "n": {
-        "content": "$1"
-      }
-    }
-  },
   "channelsEmpty": {
     "message": "Здесь появятся собранные баллы по каналам."
   },
@@ -311,15 +303,6 @@
   "setAvatarsHint": {
     "message": "Загружает картинки каналов с сервера Twitch. Если выключить, будут буквы"
   },
-  "allChannels": {
-    "message": "Все каналы ($N$)",
-    "placeholders": {
-      "n": {
-        "content": "$1",
-        "example": "104"
-      }
-    }
-  },
   "allChannelsTitle": {
     "message": "Каналов с баллами: $N$",
     "placeholders": {
@@ -379,5 +362,8 @@
   },
   "tabChannels": {
     "message": "Каналы"
+  },
+  "totalLabel": {
+    "message": "Всего"
   }
 }

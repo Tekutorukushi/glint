@@ -286,6 +286,9 @@ const check = (name, ok, extra = '') => {
     await p.click('#tab-overview');
     await p.waitForTimeout(300);
     const bars7 = await p.locator('.chart .col').count();
+    const totalShown = await p.textContent('#totalPoints');
+    const totalStored = await sw.evaluate(async () => (await chrome.storage.local.get('stats')).stats.total.points);
+    check('all-time total on the today card', totalShown === totalStored.toLocaleString('en-US'), `${totalShown} vs ${totalStored}`);
     await p.click('#chartRange [data-days="30"]');
     await p.waitForTimeout(300);
     await p.hover('.chart .col:nth-of-type(26) .hit');
@@ -326,10 +329,10 @@ const check = (name, ok, extra = '') => {
     await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
     await p.click('#tab-overview');
     await p.waitForTimeout(300);
-    const btnText = await p.textContent('#allChannelsBtn');
-    await p.click('#allChannelsBtn');
+    const noLink = await p.locator('#panel-overview .link-more, #allChannelsBtn').count() === 0;
+    await p.click('#tab-channels');
     await p.waitForTimeout(300);
-    const onTab = await p.getAttribute('#tab-channels', 'aria-selected') === 'true';
+    const title = await p.textContent('#allChannelsTitle');
     // reopening the popup restores the tab and builds the list
     await p.reload();
     await p.waitForTimeout(500);
@@ -357,9 +360,9 @@ const check = (name, ok, extra = '') => {
     await p.close();
     await sw.evaluate(s => chrome.storage.local.set(s), saved);
     check('channels tab: full list, search, 3 sorts, channel history filter',
-      btnText.includes(String(total)) && onTab && rows === total && firstByPoints === 'xqc' && found === 10 && nothing &&
+      noLink && title.includes(String(total)) && rows === total && firstByPoints === 'xqc' && found === 10 && nothing &&
       firstByName === 'jynxzi' && firstRecent !== firstByName && historyOn && chip && onlyThat && chipGone,
-      `btn="${btnText}", tab=${onTab}, rows=${rows}/${total}, top=${firstByPoints}, found=${found}, nothing=${nothing}, az=${firstByName}, recent=${firstRecent}, history=${historyOn}, chip=${chip}, only=${onlyThat}, cleared=${chipGone}`);
+      `noLink=${noLink}, title="${title}", rows=${rows}/${total}, top=${firstByPoints}, found=${found}, nothing=${nothing}, az=${firstByName}, recent=${firstRecent}, history=${historyOn}, chip=${chip}, only=${onlyThat}, cleared=${chipGone}`);
   }
 
   // channel detection shared by content, popup and background
