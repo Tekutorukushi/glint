@@ -33,6 +33,12 @@
     </button>
   </div>
 
+  <div class="notice notice-info" id="staleNotice" role="status" hidden>
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10a6 6 0 1 1-1.8-4.3M16 3.5v3.2h-3.2"/></svg>
+    <p><b id="staleText"></b><small data-i18n="staleHint"></small></p>
+    <button class="notice-action" id="staleReload" type="button" data-i18n="staleReload"></button>
+  </div>
+
   <main>
     <!-- Overview -->
     <section class="panel" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
@@ -149,7 +155,16 @@
         <label class="row"><span><b data-i18n="setAvatars"></b><small data-i18n="setAvatarsHint"></small></span><input type="checkbox" role="switch" data-setting="avatars"><i class="switch"></i></label>
         <div class="actions">
           <button class="btn" id="exportBtn" data-i18n="exportData"></button>
+          <button class="btn" id="importBtn" data-i18n="importData"></button>
           <button class="btn btn-danger" id="resetBtn" data-i18n="resetStats"></button>
+        </div>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+        <div class="import-box" id="importBox" role="status" hidden>
+          <p id="importText"></p>
+          <div class="actions" id="importActions">
+            <button class="btn btn-primary" id="importConfirm" data-i18n="importReplace"></button>
+            <button class="btn" id="importCancel" data-i18n="importCancel"></button>
+          </div>
         </div>
         <p class="footnote" id="version"></p>
       </div>

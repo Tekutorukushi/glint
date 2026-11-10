@@ -3,7 +3,7 @@
 importScripts('/src/shared/defaults.js');
 
 const {
-  DEFAULT_SETTINGS, HISTORY_MAX, DAYS_MAX, DROPS_INTERVAL_MIN, DROPS_MAX_INTERVAL_MIN, INVENTORY_URL,
+  DEFAULT_SETTINGS, DAYS_MAX, DROPS_INTERVAL_MIN, DROPS_MAX_INTERVAL_MIN, INVENTORY_URL,
   channelFromPath, dayKey, emptyStats
 } = GLINT;
 
@@ -15,10 +15,25 @@ async function getSettings() {
 // ---- claim recording (writes are serialized so parallel claims don't clobber) ----
 let writeChain = Promise.resolve();
 
-/** Keep the newest HISTORY_MAX events of each kind (history is newest first). */
-function trimHistory(history) {
-  const seen = {};
-  return history.filter(h => (seen[h.kind] = (seen[h.kind] || 0) + 1) <= HISTORY_MAX);
+const { trimHistory } = GLINT;
+
+/** The popup (or another page of the extension itself), not a script on a Twitch page. */
+function fromExtensionPage(sender) {
+  return sender.id === chrome.runtime.id && typeof sender.url === 'string' &&
+    sender.url.startsWith(chrome.runtime.getURL(''));
+}
+
+/** Replace all statistics (import from a file, or reset with empty data), in the write queue. */
+function replaceStats(data) {
+  writeChain = writeChain.then(async () => {
+    const clean = GLINT.sanitizeImport(data);
+    if (!clean) throw new Error('not a Glint export');
+    await chrome.storage.local.set({ stats: clean.stats, history: clean.history });
+    await updateBadge(clean.stats);
+  });
+  const done = writeChain;
+  writeChain = writeChain.catch(e => console.error('Glint: failed to replace stats', e));
+  return done;
 }
 
 function recordClaim(claim) {
@@ -234,6 +249,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg.type === 'checkDropsNow') {
     checkDrops(true).then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  // import / reset from the popup only (never from a script running on a Twitch page)
+  if (msg.type === 'replaceStats' && fromExtensionPage(sender)) {
+    replaceStats(msg.data).then(() => sendResponse({ ok: true }), e => sendResponse({ ok: false, error: e.message }));
     return true;
   }
 });

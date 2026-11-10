@@ -152,7 +152,7 @@
     "message": "Your data"
   },
   "exportData": {
-    "message": "Export to JSON"
+    "message": "Download JSON"
   },
   "resetStats": {
     "message": "Reset statistics"
@@ -383,5 +383,86 @@
         "example": "1.2"
       }
     }
+  },
+  "staleText_one": {
+    "message": "$N$ Twitch tab was opened before Glint updated",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "staleText_few": {
+    "message": "$N$ Twitch tabs were opened before Glint updated",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "staleText_many": {
+    "message": "$N$ Twitch tabs were opened before Glint updated",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "staleText_other": {
+    "message": "$N$ Twitch tabs were opened before Glint updated",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "staleHint": {
+    "message": "Nothing is collected in them until they reload."
+  },
+  "staleReload": {
+    "message": "Reload"
+  },
+  "importData": {
+    "message": "Load from JSON"
+  },
+  "importPreview": {
+    "message": "File from $DATE$: $POINTS$ points, $CHANNELS$ channels, $EVENTS$ events. Your current statistics will be replaced.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "November 10, 2026"
+      },
+      "points": {
+        "content": "$2",
+        "example": "8,300"
+      },
+      "channels": {
+        "content": "$3",
+        "example": "12"
+      },
+      "events": {
+        "content": "$4",
+        "example": "240"
+      }
+    }
+  },
+  "importReplace": {
+    "message": "Replace"
+  },
+  "importCancel": {
+    "message": "Cancel"
+  },
+  "importClose": {
+    "message": "Close"
+  },
+  "importBad": {
+    "message": "This isn't a Glint statistics file. Use a file made with \"Download JSON\"."
+  },
+  "importDone": {
+    "message": "Statistics loaded."
   }
 }

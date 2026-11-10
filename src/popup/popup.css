@@ -165,6 +165,21 @@ input[role="switch"]:focus-visible + .switch { outline: 2px solid var(--focus); 
 }
 .notice-close:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
 .notice-close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+/* informational variant (brass, with an action button): tabs opened before an update */
+.notice-info {
+  grid-template-columns: 18px 1fr auto;
+  align-items: center;
+  padding-right: 8px;
+  background: color-mix(in srgb, var(--brass) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brass) 35%, transparent);
+}
+.notice-info > svg { stroke: var(--brass-ink); }
+.notice-action {
+  padding: 6px 10px; border: 0; border-radius: 8px;
+  background: var(--brass); color: var(--on-brass); font-weight: 600; font-size: 12px; cursor: pointer;
+}
+.notice-action:hover { background: color-mix(in srgb, var(--brass) 85%, var(--ink)); }
+.notice-action:disabled { opacity: .6; cursor: default; }
 
 main { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
 body > header, body > .status, body > .notice, body > nav { flex: none; }
@@ -451,6 +466,18 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 .btn:hover { background: var(--raised); }
 .btn-danger { color: var(--danger); }
 .btn-danger.confirm { background: var(--danger); color: var(--bg); box-shadow: none; }
+/* data group: download + load side by side, reset on its own line */
+.actions { flex-wrap: wrap; }
+#resetBtn { flex-basis: 100%; }
+.btn-primary { background: var(--brass); color: var(--on-brass); font-weight: 600; box-shadow: none; }
+.btn-primary:hover { background: color-mix(in srgb, var(--brass) 85%, var(--ink)); }
+.import-box {
+  margin-top: 8px; padding: 10px 12px; border-radius: var(--radius-s);
+  background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-size: 12px; line-height: 1.4;
+}
+.import-box[hidden] { display: none; }
+.import-box .actions { margin-top: 8px; }
+.import-box:not([hidden]) { animation: rise var(--slow) var(--ease); }
 .footnote { margin: 12px 2px 0; color: var(--ink-3); font-size: 11.5px; }
 
 /* ---------- tab bar ---------- */
@@ -482,7 +509,7 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 /* ---------- motion ---------- */
 /* every hover, press and state change eases instead of jumping */
 .btn, .segmented button, .tabs button, .notice-close, .chips button, .suggest, .row,
-.channel a, .add-channel input, .search, .ch-row, .filter-chip button {
+.channel a, .add-channel input, .search, .ch-row, .filter-chip button, .notice-action {
   transition:
     background-color var(--fast) var(--ease), color var(--fast) var(--ease),
     box-shadow var(--fast) var(--ease), text-decoration-color var(--fast) var(--ease),

@@ -363,6 +363,8 @@
         sendResponse({ ok: true });
       }
       if (msg.type === 'inventoryClose') closeInventoryFrame();
+      // the popup asks which tabs run the current version (tabs opened before an update don't answer)
+      if (msg.type === 'ping') sendResponse({ ok: true, version: chrome.runtime.getManifest().version });
     });
     window.addEventListener('message', e => {
       if (!inventoryFrame || e.source !== inventoryFrame.contentWindow || e.origin !== location.origin) return;

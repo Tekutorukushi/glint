@@ -203,6 +203,36 @@
   });
   const loadNotice = () => chrome.storage.session.get('health').then(({ health }) => renderNotice(health));
 
+  // ------------------------------------------------------------ tabs opened before an update
+  // After "Update" on the extensions page, already open Twitch tabs keep the old, disconnected
+  // script and collect nothing until reloaded. Ping each tab's script; silent or outdated = stale.
+  const plural = new Intl.PluralRules(locale);
+  let staleTabs = [];
+  async function checkStaleTabs() {
+    const version = chrome.runtime.getManifest().version;
+    const tabsOpen = await chrome.tabs.query({ url: 'https://www.twitch.tv/*' });
+    const ping = tab => Promise.race([
+      chrome.tabs.sendMessage(tab.id, { type: 'ping' }, { frameId: 0 }).then(r => r && r.version === version, () => false),
+      new Promise(r => setTimeout(() => r(false), 1500))
+    ]);
+    // tabs still loading or unloaded by the browser will start the current version themselves
+    const live = tabsOpen.filter(tab => !tab.discarded && tab.status === 'complete');
+    const ok = await Promise.all(live.map(ping));
+    staleTabs = live.filter((tab, i) => !ok[i]).map(tab => tab.id);
+    const n = staleTabs.length;
+    $('staleNotice').hidden = !n;
+    if (n) {
+      const key = `staleText_${plural.select(n)}`;
+      $('staleText').textContent = chrome.i18n.getMessage(key, [String(n)]) || t('staleText_other', [String(n)]);
+    }
+  }
+  $('staleReload').addEventListener('click', async () => {
+    const btn = $('staleReload');
+    btn.disabled = true;
+    await Promise.all(staleTabs.map(id => chrome.tabs.reload(id).catch(() => {})));
+    setTimeout(() => { btn.disabled = false; checkStaleTabs(); }, 4000);
+  });
+
   // ------------------------------------------------------------ overview
   // Moments and drops as two small icon + number pairs (same icons as in History); the full
   // sentence ("Moments: 2, drops: 1") is the tooltip and what screen readers hear.
@@ -580,7 +610,8 @@
   // ------------------------------------------------------------ data actions
   $('exportBtn').addEventListener('click', async () => {
     const data = await chrome.storage.local.get(['stats', 'history']);
-    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), ...data }, null, 2)], { type: 'application/json' });
+    const meta = { app: 'glint', version: chrome.runtime.getManifest().version, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify({ ...meta, ...data }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `glint-${dayKey()}.json`;
@@ -603,10 +634,49 @@
     }
     clearTimeout(resetArmed);
     resetArmed = null;
-    await chrome.storage.local.set({ stats: emptyStats(), history: [] });
+    // through the background's write queue, so a claim being recorded right now can't undo it
+    await chrome.runtime.sendMessage({ type: 'replaceStats', data: { stats: emptyStats(), history: [] } });
     resetBtn.classList.remove('confirm');
     resetBtn.textContent = t('resetDone');
     setTimeout(() => { resetBtn.textContent = t('resetStats'); }, 2000);
+  });
+
+  // Import: pick a file exported earlier, see what's in it, then confirm replacing current stats.
+  let pendingImport = null;
+  function showImport(text, canReplace) {
+    $('importBox').hidden = false;
+    $('importText').textContent = text;
+    $('importConfirm').hidden = !canReplace;
+    $('importCancel').textContent = t(canReplace ? 'importCancel' : 'importClose');
+  }
+  function hideImport() {
+    pendingImport = null;
+    $('importBox').hidden = true;
+    $('importFile').value = '';
+  }
+  $('importBtn').addEventListener('click', () => $('importFile').click());
+  $('importFile').addEventListener('change', async () => {
+    const file = $('importFile').files[0];
+    if (!file) return;
+    let clean = null;
+    try {
+      if (file.size < 20e6) clean = GLINT.sanitizeImport(JSON.parse(await file.text()));
+    } catch (e) { /* not JSON */ }
+    if (!clean) return showImport(t('importBad'), false);
+    pendingImport = clean;
+    const when = clean.exportedAt
+      ? new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(clean.exportedAt)
+      : file.name;
+    showImport(t('importPreview', [when, fmt(clean.stats.total.points), fmt(Object.keys(clean.stats.channels).length),
+      fmt(clean.history.length)]), true);
+  });
+  $('importCancel').addEventListener('click', hideImport);
+  $('importConfirm').addEventListener('click', async () => {
+    if (!pendingImport) return;
+    const res = await chrome.runtime.sendMessage({ type: 'replaceStats', data: pendingImport }).catch(() => null);
+    pendingImport = null;
+    $('importFile').value = '';
+    showImport(t(res && res.ok ? 'importDone' : 'importBad'), false);
   });
 
   // ------------------------------------------------------------ data load
@@ -618,6 +688,7 @@
     renderHistory();
     renderStatus();
     loadNotice();
+    checkStaleTabs();
   }
 
   Promise.all([chrome.storage.sync.get('settings'), chrome.storage.local.get(['stats', 'history', 'avatars'])])

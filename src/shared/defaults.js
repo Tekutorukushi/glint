@@ -66,6 +66,51 @@
       return `https://static-cdn.jtvnw.net${url.pathname.replace(/-profile_image-\d+x\d+\./, '-profile_image-70x70.')}`;
     },
 
+    /** Keep the newest HISTORY_MAX events of each kind (history is newest first). */
+    trimHistory(history) {
+      const seen = {};
+      const max = globalThis.GLINT.HISTORY_MAX;
+      return history.filter(h => (seen[h.kind] = (seen[h.kind] || 0) + 1) <= max);
+    },
+
+    /**
+     * Statistics from an exported file, checked field by field: only numbers, dates and
+     * channel names of the right shape get through. Returns { stats, history, exportedAt }
+     * or null if this is not a Glint export.
+     */
+    sanitizeImport(raw) {
+      const G = globalThis.GLINT;
+      const KINDS = ['points', 'moments', 'drops'];
+      const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+      if (!isObj(raw) || !isObj(raw.stats) || !isObj(raw.stats.total) || !isObj(raw.stats.days)) return null;
+      const num = v => (Number.isFinite(+v) && +v > 0 ? Math.min(Math.floor(+v), 1e15) : 0);
+      // timestamps in ms; nothing from the future (a day of slack for clocks and time zones)
+      const ts = v => { const n = num(v); return n <= Date.now() + 864e5 ? n : 0; };
+      const counts = o => ({ points: num(o && o.points), moments: num(o && o.moments), drops: num(o && o.drops) });
+      const channelOk = name => typeof name === 'string' && G.channelFromPath(`/${name}`) === name;
+
+      const stats = G.emptyStats();
+      stats.total = counts(raw.stats.total);
+      Object.keys(raw.stats.days).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().slice(-G.DAYS_MAX)
+        .forEach(k => { stats.days[k] = counts(raw.stats.days[k]); });
+      Object.entries(isObj(raw.stats.channels) ? raw.stats.channels : {})
+        .filter(([name, c]) => channelOk(name) && isObj(c)).slice(0, 5000)
+        .forEach(([name, c]) => { stats.channels[name] = { ...counts(c), last: ts(c.last) }; });
+
+      const history = (Array.isArray(raw.history) ? raw.history : [])
+        .filter(h => isObj(h) && KINDS.includes(h.kind) && ts(h.at))
+        .map(h => ({
+          kind: h.kind,
+          channel: channelOk(h.channel) ? h.channel : '',
+          amount: h.kind === 'points' ? num(h.amount) : 1,
+          approx: !!h.approx,
+          title: String(h.title || '').slice(0, 200),
+          at: ts(h.at)
+        }))
+        .sort((a, b) => b.at - a.at);
+      return { stats, history: G.trimHistory(history), exportedAt: Date.parse(raw.exportedAt) || 0 };
+    },
+
     /** Whether points and moments should be collected on this channel. */
     collectsOn(channel, settings) {
       const list = Array.isArray(settings.channelList) ? settings.channelList : [];

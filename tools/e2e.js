@@ -286,6 +286,8 @@ const check = (name, ok, extra = '') => {
     await p.click('#tab-overview');
     await p.waitForTimeout(300);
     const bars7 = await p.locator('.chart .col').count();
+    await p.waitForTimeout(1000);
+    check('no stale-tabs notice while all tabs run the current version', await p.isHidden('#staleNotice'));
     const totalShown = await p.textContent('#totalPoints');
     const totalStored = await sw.evaluate(async () => (await chrome.storage.local.get('stats')).stats.total.points);
     check('all-time total on the today card', totalShown === totalStored.toLocaleString('en-US'), `${totalShown} vs ${totalStored}`);
@@ -440,6 +442,65 @@ const check = (name, ok, extra = '') => {
   });
   check('history: 300 per kind, old drops survive; 366 days kept', JSON.stringify(kept) === '[300,5,366]', kept.join(','));
 
+  // export → reset → import gives back the same statistics; bad files and junk fields are rejected
+  {
+    const before = await sw.evaluate(async () => chrome.storage.local.get(['stats', 'history']));
+    const p = await ctx.newPage();
+    await p.setViewportSize({ width: 360, height: 580 });
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.click('#tab-settings');
+    const [download] = await Promise.all([p.waitForEvent('download'), p.click('#exportBtn')]);
+    const file = path.join(out, 'export.json');
+    await download.saveAs(file);
+    await p.click('#resetBtn'); await p.click('#resetBtn');
+    await p.waitForTimeout(400);
+    const afterReset = await sw.evaluate(async () => (await chrome.storage.local.get('stats')).stats.total.points);
+
+    const junk = path.join(out, 'not-glint.json');
+    fs.writeFileSync(junk, JSON.stringify({ hello: 'world' }));
+    await p.setInputFiles('#importFile', junk);
+    await p.waitForTimeout(300);
+    const rejected = await p.textContent('#importText');
+    const noReplace = await p.isHidden('#importConfirm');
+
+    await p.setInputFiles('#importFile', file);
+    await p.waitForTimeout(300);
+    const preview = await p.textContent('#importText');
+    await p.locator('#importBox').scrollIntoViewIfNeeded();
+    await p.screenshot({ path: `${out}/import.png` });
+    await p.click('#importConfirm');
+    await p.waitForTimeout(500);
+    const done = await p.textContent('#importText');
+    const after = await sw.evaluate(async () => chrome.storage.local.get(['stats', 'history']));
+    await p.close();
+    // the test's demo data has missing fields, which import fills in: compare with the normalized export
+    const expected = await sw.evaluate(b => GLINT.sanitizeImport(b), before);
+    // chrome.storage returns keys sorted, so compare key-order-independently
+    const canon = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)
+      ? Object.fromEntries(Object.keys(x).sort().map(key => [key, x[key]])) : x));
+    const sameTimes = JSON.stringify(after.history.map(h => h.at)) === JSON.stringify(before.history.map(h => h.at)) &&
+      Object.entries(before.stats.channels).every(([n, c]) => after.stats.channels[n].last === c.last);
+    const same = canon(after.stats) === canon(expected.stats) && canon(after.history) === canon(expected.history) &&
+      after.stats.total.points === before.stats.total.points && sameTimes;
+    check('export → reset → import restores the same statistics',
+      afterReset === 0 && rejected.startsWith("This isn't a Glint") && noReplace &&
+      preview.includes(`${before.stats.total.points.toLocaleString('en-US')} points`) && done === 'Statistics loaded.' && same,
+      `reset=${afterReset}, rejected="${rejected.slice(0, 25)}", preview="${preview.slice(0, 60)}", done="${done}", same=${same}, times=${sameTimes}`);
+
+    const cleaned = await sw.evaluate(() => GLINT.sanitizeImport({
+      stats: { total: { points: '50', moments: -3, drops: 'x' }, days: { '2026-11-01': { points: 7 }, 'bad': { points: 9 } },
+        channels: { shroud: { points: 5, last: 1 }, '../evil': { points: 1 }, xqc: 'nope' } },
+      history: [{ kind: 'points', channel: '<img onerror=x>', amount: 50, at: 2, title: '<b>t</b>' }, { kind: 'hack', at: 3 },
+        { kind: 'drops', at: 'later' }, { kind: 'moments', at: Date.now() + 30 * 864e5 }]
+    }));
+    check('import keeps only well-formed fields',
+      JSON.stringify(cleaned.stats.total) === '{"points":50,"moments":0,"drops":0}' &&
+      JSON.stringify(Object.keys(cleaned.stats.days)) === '["2026-11-01"]' &&
+      JSON.stringify(Object.keys(cleaned.stats.channels)) === '["shroud"]' &&
+      cleaned.history.length === 1 && cleaned.history[0].channel === '' && cleaned.history[0].title === '<b>t</b>',
+      JSON.stringify(cleaned).slice(0, 160));
+  }
+
   // drops check without a new tab: a channel tab loads the inventory in a hidden frame
   {
     await inv.close(); // the user's own inventory tab would be reloaded instead
@@ -473,6 +534,37 @@ const check = (name, ok, extra = '') => {
   console.log('badge when paused:', JSON.stringify(await sw.evaluate(() => chrome.action.getBadgeText({}))));
   console.log('page errors:', pageErr, 'SW errors:', swErr);
   check('no page or service worker errors', !pageErr.length && !swErr.length);
+
+  // Tabs opened before an update don't answer the popup's ping. Playwright can't bring the
+  // extension back after chrome.runtime.reload(), so the popup sees "no answer" from every tab
+  // until it reloads them; that the scripts do answer is checked by "no stale-tabs notice".
+  {
+    const twitchTabs = ctx.pages().filter(pg => pg.url().startsWith('https://www.twitch.tv/')).length;
+    const p = await ctx.newPage();
+    await p.setViewportSize({ width: 360, height: 580 });
+    await p.addInitScript(() => {
+      const send = chrome.tabs.sendMessage.bind(chrome.tabs);
+      const reload = chrome.tabs.reload.bind(chrome.tabs);
+      window.__reloaded = 0;
+      chrome.tabs.sendMessage = (id, msg, opts) => msg && msg.type === 'ping' && !window.__reloaded
+        ? Promise.reject(new Error('Could not establish connection. Receiving end does not exist.'))
+        : send(id, msg, opts);
+      chrome.tabs.reload = id => { window.__reloaded++; return reload(id); };
+    });
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.waitForTimeout(1500);
+    const shown = await p.isVisible('#staleNotice');
+    const text = await p.textContent('#staleText');
+    await p.screenshot({ path: `${out}/stale-tabs.png` });
+    await p.click('#staleReload');
+    await p.waitForTimeout(6000);
+    const reloaded = await p.evaluate(() => window.__reloaded);
+    const gone = await p.isHidden('#staleNotice');
+    await p.close();
+    check('stale tabs: counted, the button reloads them, the notice goes away',
+      shown && text === `${twitchTabs} Twitch tabs were opened before Glint updated` && reloaded === twitchTabs && gone,
+      `shown=${shown}, "${text}", tabs=${twitchTabs}, reloaded=${reloaded}, gone=${gone}`);
+  }
 
   // extension updated while a Twitch tab is open: the old script must stop quietly
   // (it used to click and then throw on chrome.i18n). Must be last: it reloads the extension.

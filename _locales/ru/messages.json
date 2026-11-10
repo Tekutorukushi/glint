@@ -383,5 +383,86 @@
         "example": "1,2"
       }
     }
+  },
+  "staleText_one": {
+    "message": "$N$ вкладка Twitch открыта до обновления Glint",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "staleText_few": {
+    "message": "$N$ вкладки Twitch открыты до обновления Glint",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "staleText_many": {
+    "message": "$N$ вкладок Twitch открыто до обновления Glint",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "staleText_other": {
+    "message": "$N$ вкладок Twitch открыто до обновления Glint",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "staleHint": {
+    "message": "Пока их не перезагрузить, в них ничего не собирается."
+  },
+  "staleReload": {
+    "message": "Перезагрузить"
+  },
+  "importData": {
+    "message": "Загрузить из JSON"
+  },
+  "importPreview": {
+    "message": "Файл от $DATE$: $POINTS$ баллов, каналов: $CHANNELS$, событий: $EVENTS$. Текущая статистика будет заменена.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "10 ноября 2026 г."
+      },
+      "points": {
+        "content": "$2",
+        "example": "8 300"
+      },
+      "channels": {
+        "content": "$3",
+        "example": "12"
+      },
+      "events": {
+        "content": "$4",
+        "example": "240"
+      }
+    }
+  },
+  "importReplace": {
+    "message": "Заменить"
+  },
+  "importCancel": {
+    "message": "Отмена"
+  },
+  "importClose": {
+    "message": "Закрыть"
+  },
+  "importBad": {
+    "message": "Это не файл статистики Glint. Нужен файл, скачанный кнопкой «Скачать в JSON»."
+  },
+  "importDone": {
+    "message": "Статистика загружена."
   }
 }
