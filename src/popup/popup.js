@@ -28,7 +28,6 @@
   let history = [];
   let avatars = {};
   let historyKind = 'all';
-  let historyChannel = '';
   let lastToday = null;
 
   // ------------------------------------------------------------ i18n
@@ -514,10 +513,11 @@
     $('allChannelsEmpty').hidden = list.length > 0;
     $('allChannelList').replaceChildren(...list.map(c => {
       const li = document.createElement('li');
-      const row = document.createElement('button');
-      row.type = 'button';
+      const row = document.createElement('a');
       row.className = 'ch-row';
-      row.title = t('channelHistory', [c.name]);
+      row.href = `https://www.twitch.tv/${c.name}`;
+      row.target = '_blank';
+      row.rel = 'noopener';
       const what = document.createElement('span');
       what.className = 'what';
       const b = document.createElement('b');
@@ -530,7 +530,6 @@
       num.className = 'num';
       setNumber(num, c.points);
       row.append(avatarEl(c.name), what, num);
-      row.addEventListener('click', () => showChannelHistory(c.name));
       li.append(row);
       return li;
     }));
@@ -563,11 +562,12 @@
   function renderHistory() {
     const box = $('historyList');
     box.replaceChildren();
-    const items = history.filter(h => (historyKind === 'all' || h.kind === historyKind) &&
-      (!historyChannel || h.channel === historyChannel));
-    $('historyEmpty').hidden = items.length > 0;
-    $('historyChannelBar').hidden = !historyChannel;
-    $('historyChannelText').textContent = historyChannel ? t('historyChannel', [historyChannel]) : '';
+    // the search looks at the channel and at the drop or moment title
+    const q = $('historySearch').value.trim().toLowerCase().replace(/^@/, '');
+    const ofKind = history.filter(h => historyKind === 'all' || h.kind === historyKind);
+    const items = q ? ofKind.filter(h => `${h.channel || ''}\n${h.title || ''}`.toLowerCase().includes(q)) : ofKind;
+    $('historyEmpty').hidden = ofKind.length > 0;
+    $('historyNothing').hidden = !ofKind.length || items.length > 0;
     const dayFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' });
     const timeFmt = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' });
     const todayK = dayKey();
@@ -606,17 +606,7 @@
     });
   }
 
-  // history of one channel, opened from the "all channels" screen
-  function showChannelHistory(name) {
-    historyChannel = name;
-    selectTab($('tab-history'));
-    renderHistory();
-    document.querySelector('main').scrollTop = 0;
-  }
-  $('historyChannelClear').addEventListener('click', () => {
-    historyChannel = '';
-    renderHistory();
-  });
+  $('historySearch').addEventListener('input', renderHistory);
 
   const filterButtons = Array.from(document.querySelectorAll('#historyFilter button'));
   filterButtons.forEach(b => b.addEventListener('click', () => {

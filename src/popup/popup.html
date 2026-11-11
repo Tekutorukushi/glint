@@ -97,20 +97,16 @@
 
     <!-- History -->
     <section class="panel" id="panel-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+      <input class="search" id="historySearch" type="search" autocomplete="off" spellcheck="false" data-i18n-placeholder="searchHistory">
       <div class="segmented" role="radiogroup" id="historyFilter">
         <button role="radio" aria-checked="true" data-kind="all" data-i18n="filterAll"></button>
         <button role="radio" aria-checked="false" data-kind="points" data-i18n="filterPoints"></button>
         <button role="radio" aria-checked="false" data-kind="moments" data-i18n="filterMoments"></button>
         <button role="radio" aria-checked="false" data-kind="drops" data-i18n="filterDrops"></button>
       </div>
-      <div class="filter-chip" id="historyChannelBar" hidden>
-        <span id="historyChannelText"></span>
-        <button type="button" id="historyChannelClear" data-i18n-label="clearFilter">
-          <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 2l6 6M8 2 2 8"/></svg>
-        </button>
-      </div>
       <div id="historyList" class="history"></div>
       <p class="empty" id="historyEmpty" data-i18n="historyEmpty" hidden></p>
+      <p class="empty" id="historyNothing" data-i18n="historyNothing" hidden></p>
     </section>
 
     <!-- Settings -->

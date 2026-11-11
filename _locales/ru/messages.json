@@ -315,6 +315,12 @@
   "searchChannel": {
     "message": "Поиск канала"
   },
+  "searchHistory": {
+    "message": "Поиск по каналу или дропу"
+  },
+  "historyNothing": {
+    "message": "Ничего не найдено"
+  },
   "searchNothing": {
     "message": "Ничего не найдено"
   },
@@ -338,27 +344,6 @@
         "example": "2"
       }
     }
-  },
-  "channelHistory": {
-    "message": "История канала $NAME$",
-    "placeholders": {
-      "name": {
-        "content": "$1",
-        "example": "shroud"
-      }
-    }
-  },
-  "historyChannel": {
-    "message": "Канал: $NAME$",
-    "placeholders": {
-      "name": {
-        "content": "$1",
-        "example": "shroud"
-      }
-    }
-  },
-  "clearFilter": {
-    "message": "Показать все каналы"
   },
   "tabChannels": {
     "message": "Каналы"

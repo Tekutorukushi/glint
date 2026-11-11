@@ -315,6 +315,12 @@
   "searchChannel": {
     "message": "Search channels"
   },
+  "searchHistory": {
+    "message": "Search channel or drop"
+  },
+  "historyNothing": {
+    "message": "Nothing found"
+  },
   "searchNothing": {
     "message": "No channels found"
   },
@@ -338,27 +344,6 @@
         "example": "2"
       }
     }
-  },
-  "channelHistory": {
-    "message": "History of $NAME$",
-    "placeholders": {
-      "name": {
-        "content": "$1",
-        "example": "shroud"
-      }
-    }
-  },
-  "historyChannel": {
-    "message": "Channel: $NAME$",
-    "placeholders": {
-      "name": {
-        "content": "$1",
-        "example": "shroud"
-      }
-    }
-  },
-  "clearFilter": {
-    "message": "Show all channels"
   },
   "tabChannels": {
     "message": "Channels"

@@ -380,7 +380,7 @@ const check = (name, ok, extra = '') => {
     await p.close();
   }
 
-  // all channels: a long list with search, sorting, and a jump to that channel's history
+  // all channels: a long list with search, sorting, rows linking to Twitch; history search
   {
     const saved = await sw.evaluate(async () => {
       const saved = await chrome.storage.local.get('stats');
@@ -419,21 +419,29 @@ const check = (name, ok, extra = '') => {
     const firstByName = await p.textContent('#allChannelList li:first-child b');
     await p.click('#channelSort [data-sort="recent"]');
     const firstRecent = await p.textContent('#allChannelList li:first-child b');
-    await p.fill('#channelSearch', 'kaicenat');
-    await p.click('#allChannelList .ch-row');
+    const link = await p.$eval('#allChannelList li:first-child a.ch-row', a => [a.href, a.target, a.rel].join(' '));
+    const linkOk = link === `https://www.twitch.tv/${firstRecent} _blank noopener`;
+    await p.click('#tab-history');
+    await p.waitForTimeout(400);
+    const smalls = () => p.$$eval('#historyList .event small', els => els.map(e => e.textContent));
+    await p.fill('#historySearch', 'KaiCenat');
+    const byChannel = await smalls();
+    await p.fill('#historySearch', 'crate');
+    const byTitle = await smalls();
     await p.waitForTimeout(300);
-    const historyOn = await p.getAttribute('#tab-history', 'aria-selected') === 'true';
-    const chip = await p.isVisible('#historyChannelBar');
-    const onlyThat = await p.evaluate(() => [...document.querySelectorAll('#historyList .event small')].every(s => s.textContent.includes('kaicenat')));
-    await p.screenshot({ path: `${out}/history-channel.png` });
-    await p.click('#historyChannelClear');
-    const chipGone = await p.isHidden('#historyChannelBar');
+    await p.screenshot({ path: `${out}/history-search.png` });
+    await p.fill('#historySearch', 'zzz');
+    const none = await p.isVisible('#historyNothing') && await p.isHidden('#historyEmpty') && (await smalls()).length === 0;
+    await p.fill('#historySearch', '');
+    const histOk = byChannel.length > 0 && byChannel.every(t => t.includes('kaicenat')) &&
+      byTitle.length > 0 && byTitle.every(t => t.includes('Season Pass Crate')) && none;
     await p.close();
     await sw.evaluate(s => chrome.storage.local.set(s), saved);
-    check('channels tab: full list, search, 3 sorts, channel history filter',
+    check('history search: by channel and by title', histOk, `channel=${byChannel.length}, title=${byTitle.length}, none=${none}`);
+    check('channels tab: full list, search, 3 sorts, rows link to the channel',
       noLink && title.includes(String(total)) && rows === total && firstByPoints === 'xqc' && found === 10 && nothing &&
-      firstByName === 'jynxzi' && firstRecent !== firstByName && historyOn && chip && onlyThat && chipGone,
-      `noLink=${noLink}, title="${title}", rows=${rows}/${total}, top=${firstByPoints}, found=${found}, nothing=${nothing}, az=${firstByName}, recent=${firstRecent}, history=${historyOn}, chip=${chip}, only=${onlyThat}, cleared=${chipGone}`);
+      firstByName === 'jynxzi' && firstRecent !== firstByName && linkOk,
+      `noLink=${noLink}, title="${title}", rows=${rows}/${total}, top=${firstByPoints}, found=${found}, nothing=${nothing}, az=${firstByName}, recent=${firstRecent}, link="${link}"`);
   }
 
   // big numbers: from 100 000 on they are shortened (rounded down), exact value on hover
