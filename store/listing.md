@@ -68,16 +68,16 @@ Glint не связан с Twitch и не одобрен Twitch. Автомат�
 ## Вкладка «Privacy practices»
 
 **Single purpose:**
-Glint automates claiming Twitch channel rewards (channel points bonus, moments and drops) on twitch.tv and shows statistics of what was claimed.
+Glint automates claiming Twitch channel rewards (channel points bonus, moments and drops) on twitch.tv and shows statistics of what was claimed and how long each channel was watched.
 
 **Permission justifications:**
 
 | Permission | Justification |
 |---|---|
-| `storage` | Stores the user's settings and the statistics of claimed points, moments and drops locally in the browser. Nothing is sent anywhere. |
+| `storage` | Stores the user's settings, the statistics of claimed points, moments and drops, and per-channel watch time locally in the browser. Nothing is sent anywhere. |
 | `alarms` | Schedules the periodic drops inventory check (every 15–60 minutes) and the midnight reset of the "points today" badge. |
 | `notifications` | Optional system notifications when a drop or a moment is claimed; both can be turned off in settings. |
-| Host `https://www.twitch.tv/*` | Content scripts run only on twitch.tv to find and click the channel points bonus, moment and drop claim buttons, keep the player running in background tabs and read channel names for statistics. The script also runs in frames (`all_frames`) so that the drops inventory can be checked inside an invisible same-origin frame instead of opening a new tab. |
+| Host `https://www.twitch.tv/*` | Content scripts run only on twitch.tv to find and click the channel points bonus, moment and drop claim buttons, keep the player running in background tabs, show a small optional pop-up when something is claimed, and read channel names and whether the stream is playing for statistics. The script also runs in frames (`all_frames`) so that the drops inventory can be checked inside an invisible same-origin frame instead of opening a new tab. |
 
 **Are you using remote code?** No. All code is in the package. The popup only loads channel avatar images (not code) from `https://static-cdn.jtvnw.net`, Twitch's image server; this can be turned off.
 
