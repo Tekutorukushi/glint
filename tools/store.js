@@ -13,7 +13,7 @@ const OUT = path.join(__dirname, 'out', 'store');
 const COPY = {
   en: {
     overview: ['Channel points collect themselves', 'Glint claims the bonus chest, moments and drops while a stream is open, even in a background tab.'],
-    history: ['Everything you got, in one place', 'Points, moments and drops by day, with a filter by type.'],
+    history: ['Everything you got, in one place', 'Points, moments and drops by day, with search and a filter by type.'],
     channels: ['Every channel at a glance', 'Every channel you collected on, with how long you watched it. Search, sort, open on Twitch.'],
     settings: ['You decide what runs', 'Pick the channels to collect on, and switch off any automatic feature.'],
     privacy: ['No servers, no analytics', 'Your stats stay in your browser. Glint has no servers of its own and no tracking.'],
@@ -21,7 +21,7 @@ const COPY = {
   },
   ru: {
     overview: ['Баллы канала собираются сами', 'Glint забирает бонусный сундук, моменты и дропы, пока открыт стрим, даже в фоновой вкладке.'],
-    history: ['Всё собранное в одном месте', 'Баллы, моменты и дропы по дням, с фильтром по типу.'],
+    history: ['Всё собранное в одном месте', 'Баллы, моменты и дропы по дням, с поиском и фильтром по типу.'],
     channels: ['Все каналы под рукой', 'Все каналы, где шёл сбор, и сколько вы их смотрели. Поиск, сортировка, переход на Twitch.'],
     settings: ['Вы решаете, что работает', 'Выберите каналы для сбора, а любую автоматическую функцию можно выключить.'],
     privacy: ['Без серверов и аналитики', 'Статистика хранится только в вашем браузере. Своих серверов и слежки у Glint нет.'],
