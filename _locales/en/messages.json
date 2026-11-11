@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "Glint — Auto Points for Twitch"
+    "message": "Glint — Auto Points & Drops for Twitch"
   },
   "extDescription": {
-    "message": "Collects Twitch channel points, moments and drops for you, keeps background streams playing and shows what you earned."
+    "message": "Auto-claims Twitch channel points, moments and drops, keeps background streams playing, fixes player errors and tracks your stats."
   },
   "statusOn": {
     "message": "On"

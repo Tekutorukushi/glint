@@ -5,12 +5,11 @@
 ## Вкладка «Store listing»
 
 **Name** — берётся из манифеста (`extName`):
-- en: Glint — Auto Points for Twitch
-- ru: Glint — автосбор баллов для Twitch
+- Glint — Auto Points & Drops for Twitch (на всех языках: в `_locales/ru` те же `extName` и `extDescription`, что в `en`, так решил пользователь 11.11.2026)
 
 Не ставить «Twitch» первым словом и не убирать «for/для Twitch»: правила бренда Twitch разрешают только указание совместимости, а магазин отклоняет названия, похожие на официальные.
 
-**Summary** — тоже из манифеста (`extDescription`, до 132 символов).
+**Summary** — тоже из манифеста (`extDescription`, до 132 символов). В кабинете поле серое (не редактируется) и может показываться на одном языке на всех языковых вкладках; посетитель магазина видит его на своём языке (проверка: страница магазина с `?hl=en` и `?hl=ru`). Магазин выводит его прямо над подробным описанием, поэтому подробное не должно начинаться с той же фразы.
 
 **Category:** Entertainment (Развлечения).
 
@@ -18,7 +17,7 @@
 
 ### Detailed description — English
 
-Glint collects your Twitch channel points for you, claims moments and drops, and shows how much you've earned.
+Leave a stream open and Glint does the rest, even in a background tab.
 
 What it does
 • Channel points: clicks the bonus chest as soon as it appears.
@@ -26,12 +25,15 @@ What it does
 • Drops: while a stream is open, checks your drops inventory every 15–60 minutes in an invisible frame (no new tabs) and claims what's ready.
 • Player: keeps the stream playing in background tabs, presses "retry" after player errors, skips the mature content warning.
 • Channels: collect everywhere, only on chosen channels, or everywhere except them.
-• Statistics: points today and all time, a 7/14/30-day chart, every channel with watch time, search and sorting, a full history of what was collected.
+• Statistics: points today and all time, a 7/14/30-day chart, every channel with search and sorting, a full history of what was collected with search.
+• Watch time: counts how long a stream actually played on each channel (pauses don't count, two tabs of one channel count once).
+• Notifications: a small pop-up on the Twitch page in the corner or edge you choose, system notifications for drops and moments, today's points on the toolbar icon.
+• Your data: export statistics to a file and import them back.
 • Self-check: if Twitch changes its site and buttons stop working, Glint tells you instead of failing silently.
 • Every automatic feature has its own switch.
 
 Privacy
-Glint has no servers of its own, no analytics and no ads. Your settings and statistics stay in your browser; you can download them as JSON and load them back. The only thing loaded from the network is channel avatar pictures from Twitch's own image server, and you can turn that off.
+Glint has no servers of its own, no analytics and no ads. Your settings and statistics stay in your browser. The only thing loaded from the network is channel avatar pictures from Twitch's own image server, and you can turn that off.
 
 Languages: English and Russian. Light and dark theme follow your system.
 
@@ -39,7 +41,7 @@ Glint is not affiliated with or endorsed by Twitch. Automating actions may be ag
 
 ### Подробное описание — русский
 
-Glint сам собирает бонусные баллы каналов на Twitch, забирает моменты и дропы и показывает, сколько вы заработали.
+Оставьте стрим открытым, остальное Glint сделает сам, даже в фоновой вкладке.
 
 Что умеет
 • Баллы канала: нажимает на сундук с бонусом, как только он появляется.
@@ -47,12 +49,15 @@ Glint сам собирает бонусные баллы каналов на Tw
 • Дропы: пока открыт стрим, раз в 15–60 минут проверяет инвентарь дропов в невидимом фрейме (без новых вкладок) и забирает готовые.
 • Плеер: стрим не встаёт на паузу в фоновой вкладке, после ошибки плеера нажимается «Повторить», предупреждение 18+ пропускается.
 • Каналы: собирать везде, только на выбранных каналах или везде, кроме них.
-• Статистика: баллы за сегодня и за всё время, график за 7, 14 или 30 дней, все каналы со временем просмотра, поиском и сортировкой, полная история собранного.
+• Статистика: баллы за сегодня и за всё время, график за 7, 14 или 30 дней, все каналы с поиском и сортировкой, полная история собранного с поиском.
+• Время просмотра: сколько на каждом канале реально шёл стрим (пауза не считается, две вкладки одного канала считаются один раз).
+• Уведомления: небольшая плашка на странице Twitch в выбранном углу или у края, системные уведомления о дропах и моментах, баллы за сегодня на значке расширения.
+• Ваши данные: статистику можно выгрузить в файл и загрузить обратно.
 • Самопроверка: если Twitch изменит сайт и кнопки перестанут нажиматься, Glint сообщит об этом, а не будет молча бездействовать.
 • Каждую автоматическую функцию можно выключить.
 
 Приватность
-У Glint нет своих серверов, аналитики и рекламы. Настройки и статистика хранятся только в вашем браузере; их можно скачать в JSON и загрузить обратно. Из сети загружаются только картинки аватаров каналов с сервера самого Twitch, и это можно выключить.
+У Glint нет своих серверов, аналитики и рекламы. Настройки и статистика хранятся только в вашем браузере. Из сети загружаются только картинки аватаров каналов с сервера самого Twitch, и это можно выключить.
 
 Языки: русский и английский. Светлая и тёмная тема подстраиваются под систему.
 

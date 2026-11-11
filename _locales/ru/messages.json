@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "Glint — автосбор баллов для Twitch"
+    "message": "Glint — Auto Points & Drops for Twitch"
   },
   "extDescription": {
-    "message": "Собирает баллы канала, моменты и дропы на Twitch, не даёт стриму встать на паузу в фоне и показывает, сколько вы заработали."
+    "message": "Auto-claims Twitch channel points, moments and drops, keeps background streams playing, fixes player errors and tracks your stats."
   },
   "statusOn": {
     "message": "Включено"
