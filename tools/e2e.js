@@ -133,6 +133,35 @@ const check = (name, ok, extra = '') => {
   console.log('bonus clicked:', await tw.evaluate(() => window.__claimed), 'visibility spoof:', await tw.evaluate(() => window.__vis()));
   await tw.screenshot({ path: out + '/toast.png', clip: { x: 0, y: 500, width: 420, height: 220 } });
 
+  // toast position: picked in the popup on a little screen, applied to the open Twitch tab at once
+  {
+    const p = await ctx.newPage();
+    await p.setViewportSize({ width: 360, height: 580 });
+    await p.goto(`chrome-extension://${id}/src/popup/popup.html`);
+    await p.click('#tab-settings');
+    const startOn = await p.getAttribute('#toastPos [data-pos="bottom-left"]', 'aria-checked') === 'true';
+    await p.click('#toastPos [data-pos="top-right"]');
+    await p.waitForTimeout(300);
+    const placed = await tw.evaluate(() => { const h = document.querySelector('glint-toasts'); return h && `${h.dataset.pos} ${h.style.right} ${h.style.top}`; });
+    await p.locator('#toastPosRow').scrollIntoViewIfNeeded();
+    await p.screenshot({ path: `${out}/toast-position.png` });
+    await p.focus('#toastPos [data-pos="top-right"]');
+    await p.keyboard.press('ArrowDown');
+    await p.keyboard.press('ArrowLeft'); // over the empty centre to the left edge
+    const byKeys = (await sw.evaluate(async () => (await chrome.storage.sync.get('settings')).settings.toastPosition));
+    const name = await p.textContent('#toastPosName');
+    await p.locator('input[data-setting="toasts"]').locator('xpath=..').click();
+    const hiddenOff = await p.isHidden('#toastPosRow');
+    await p.locator('input[data-setting="toasts"]').locator('xpath=..').click();
+    await p.click('#toastPos [data-pos="bottom-left"]');
+    await p.waitForTimeout(200);
+    const back = await tw.evaluate(() => document.querySelector('glint-toasts').dataset.pos);
+    await p.close();
+    check('toast position: picked in the popup, moves the toasts, arrow keys, hidden when toasts are off',
+      startOn && placed === 'top-right 16px 66px' && byKeys === 'left' && name === 'Middle left' && hiddenOff && back === 'bottom-left',
+      `start=${startOn}, placed="${placed}", keys=${byKeys}, name="${name}", hiddenOff=${hiddenOff}, back=${back}`);
+  }
+
   const inv = await ctx.newPage();
   await inv.goto('https://www.twitch.tv/drops/inventory');
   await inv.waitForTimeout(3000);

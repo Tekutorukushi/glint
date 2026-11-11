@@ -415,6 +415,29 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 .row small { display: block; color: var(--ink-3); font-size: 11.5px; line-height: 1.35; margin-top: 1px; }
 .row .switch { display: block; }
 
+/* where toasts appear: a little screen with a spot at every corner and edge */
+.row.sub { cursor: default; padding-top: 2px; }
+.group .row + .row.sub { border-top: 0; }
+.row.sub[hidden] { display: none; }
+.pos-picker {
+  flex: none; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+  width: 84px; height: 54px; padding: 3px; border-radius: 7px;
+  background: var(--bg); box-shadow: inset 0 0 0 1px var(--line);
+}
+.pos-picker button {
+  display: grid; place-items: center; padding: 0; border: 0; border-radius: 4px;
+  background: none; cursor: pointer;
+}
+.pos-picker button:nth-child(5) { grid-column: 3; }
+.pos-picker button::before {
+  content: ""; width: 14px; height: 5px; border-radius: 3px;
+  background: color-mix(in srgb, var(--ink) 22%, transparent);
+  transition: background-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+.pos-picker button:hover::before { background: color-mix(in srgb, var(--ink) 45%, transparent); }
+.pos-picker button[aria-checked="true"]::before { background: var(--brass); transform: scale(1.15); }
+.pos-picker button:focus-visible { outline: 2px solid var(--brass); outline-offset: -1px; }
+
 /* channel list */
 .channel-box { padding: 10px 12px 12px; border-radius: var(--radius-s); background: var(--surface); }
 .channel-box .segmented { margin-bottom: 8px; background: var(--bg); }

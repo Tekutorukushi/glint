@@ -90,11 +90,14 @@
     if (!settings.toasts || window.top !== window) return;
     if (!toastHost) {
       toastHost = document.createElement('glint-toasts');
-      toastHost.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:2147483646;pointer-events:none';
+      placeToasts();
       const root = toastHost.attachShadow({ mode: 'open' });
       root.innerHTML = `<style>
         :host { all: initial; }
-        .stack { display: flex; flex-direction: column-reverse; gap: 8px; }
+        .stack { display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 8px; }
+        :host([data-pos^="top"]) .stack { flex-direction: column; }
+        :host([data-pos$="right"]) .stack { align-items: flex-end; }
+        :host([data-pos="top"]) .stack, :host([data-pos="bottom"]) .stack { align-items: center; }
         .toast {
           display: grid; grid-template-columns: 28px auto; align-items: center; gap: 10px;
           min-width: 180px; max-width: 300px; padding: 10px 14px 10px 10px;
@@ -104,11 +107,14 @@
           transform: translateY(12px); opacity: 0;
           transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s;
         }
+        :host([data-pos^="top"]) .toast { transform: translateY(-12px); }
+        :host([data-pos="left"]) .toast { transform: translateX(-12px); }
+        :host([data-pos="right"]) .toast { transform: translateX(12px); }
         .toast.in { transform: none; opacity: 1; }
         .coin { width: 28px; height: 28px; }
         .title { font-weight: 650; font-variant-numeric: tabular-nums; }
         .sub { color: #9DB3AD; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        @media (prefers-reduced-motion: reduce) { .toast { transition: opacity .2s; transform: none; } }
+        @media (prefers-reduced-motion: reduce) { .toast, :host([data-pos]) .toast { transition: opacity .2s; transform: none; } }
       </style><div class="stack"></div>`;
       document.documentElement.appendChild(toastHost);
     }
@@ -124,6 +130,19 @@
       el.classList.remove('in');
       setTimeout(() => el.remove(), 400);
     }, 4200);
+  }
+
+  // top positions sit below Twitch's top bar (50 px)
+  const TOAST_PLACES = {
+    'top-left': 'left:16px;top:66px', top: 'left:50%;top:66px;transform:translateX(-50%)', 'top-right': 'right:16px;top:66px',
+    left: 'left:16px;top:50%;transform:translateY(-50%)', right: 'right:16px;top:50%;transform:translateY(-50%)',
+    'bottom-left': 'left:16px;bottom:16px', bottom: 'left:50%;bottom:16px;transform:translateX(-50%)', 'bottom-right': 'right:16px;bottom:16px'
+  };
+  function placeToasts() {
+    if (!toastHost) return;
+    const pos = TOAST_PLACES[settings.toastPosition] ? settings.toastPosition : DEFAULT_SETTINGS.toastPosition;
+    toastHost.dataset.pos = pos;
+    toastHost.style.cssText = `position:fixed;${TOAST_PLACES[pos]};z-index:2147483646;pointer-events:none`;
   }
 
   function coinSvg(kind) {
@@ -479,5 +498,6 @@
     if (area !== 'sync' || !changes.settings) return;
     settings = { ...DEFAULT_SETTINGS, ...(changes.settings.newValue || {}) };
     pushPageConfig();
+    placeToasts();
   });
 })();

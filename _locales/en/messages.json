@@ -134,7 +134,34 @@
     "message": "Pop-ups on the Twitch page"
   },
   "setToastsHint": {
-    "message": "A small note in the corner when something is collected"
+    "message": "A small note on the page when something is collected"
+  },
+  "setToastPosition": {
+    "message": "Position"
+  },
+  "posTopLeft": {
+    "message": "Top left"
+  },
+  "posTop": {
+    "message": "Top centre"
+  },
+  "posTopRight": {
+    "message": "Top right"
+  },
+  "posLeft": {
+    "message": "Middle left"
+  },
+  "posRight": {
+    "message": "Middle right"
+  },
+  "posBottomLeft": {
+    "message": "Bottom left"
+  },
+  "posBottom": {
+    "message": "Bottom centre"
+  },
+  "posBottomRight": {
+    "message": "Bottom right"
   },
   "setNotifyDrops": {
     "message": "System notification for drops"

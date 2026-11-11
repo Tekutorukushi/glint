@@ -134,7 +134,34 @@
     "message": "Подсказки на странице Twitch"
   },
   "setToastsHint": {
-    "message": "Небольшая плашка в углу, когда что-то собрано"
+    "message": "Небольшая плашка на странице, когда что-то собрано"
+  },
+  "setToastPosition": {
+    "message": "Где показывать"
+  },
+  "posTopLeft": {
+    "message": "Вверху слева"
+  },
+  "posTop": {
+    "message": "Вверху по центру"
+  },
+  "posTopRight": {
+    "message": "Вверху справа"
+  },
+  "posLeft": {
+    "message": "Слева по центру"
+  },
+  "posRight": {
+    "message": "Справа по центру"
+  },
+  "posBottomLeft": {
+    "message": "Внизу слева"
+  },
+  "posBottom": {
+    "message": "Внизу по центру"
+  },
+  "posBottomRight": {
+    "message": "Внизу справа"
   },
   "setNotifyDrops": {
     "message": "Системное уведомление о дропах"

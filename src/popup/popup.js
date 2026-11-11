@@ -74,6 +74,7 @@
     $('masterLabel').textContent = t(settings.enabled ? 'statusOn' : 'statusPaused');
     document.body.classList.toggle('off', !settings.enabled);
     toggles.forEach(input => { input.checked = !!settings[input.dataset.setting]; });
+    renderToastPosition();
     renderChannelList();
   }
 
@@ -82,6 +83,45 @@
     chrome.storage.sync.set({ settings });
     renderSettings();
     renderStatus();
+  }
+
+  // ------------------------------------------------------------ toast position
+  const POS = GLINT.TOAST_POSITIONS;
+  const posKey = p => `pos${p.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join('')}`; // posTopLeft
+  const posButtons = POS.map((pos, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'radio');
+    b.dataset.pos = pos;
+    b.setAttribute('aria-label', t(posKey(pos)));
+    b.title = t(posKey(pos));
+    b.addEventListener('click', () => saveSetting('toastPosition', pos));
+    // arrows move around the 3×3 grid; the centre has no spot, so it is stepped over
+    b.addEventListener('keydown', e => {
+      const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+      if (!d) return;
+      e.preventDefault();
+      const cell = i < 4 ? i : i + 1;
+      let x = cell % 3, y = Math.floor(cell / 3);
+      do { x = (x + d[0] + 3) % 3; y = (y + d[1] + 3) % 3; } while (x === 1 && y === 1);
+      const c = y * 3 + x;
+      const next = posButtons[c < 4 ? c : c - 1];
+      saveSetting('toastPosition', next.dataset.pos);
+      next.focus();
+    });
+    return b;
+  });
+  $('toastPos').append(...posButtons);
+
+  function renderToastPosition() {
+    const cur = POS.includes(settings.toastPosition) ? settings.toastPosition : GLINT.DEFAULT_SETTINGS.toastPosition;
+    posButtons.forEach(b => {
+      const on = b.dataset.pos === cur;
+      b.setAttribute('aria-checked', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    $('toastPosName').textContent = t(posKey(cur));
+    $('toastPosRow').hidden = !settings.toasts;
   }
 
   // ------------------------------------------------------------ channel list

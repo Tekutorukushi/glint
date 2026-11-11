@@ -18,6 +18,8 @@
       autoRecover: true,
       matureGate: true,
       toasts: true,
+      // where toasts appear on the Twitch page, one of TOAST_POSITIONS
+      toastPosition: 'bottom-left',
       notifyDrops: true,
       notifyMoments: false,
       badge: true,
@@ -27,6 +29,8 @@
       channelList: Object.freeze([])
     }),
     CHANNEL_LIST_MAX: 200,
+    // reading order of the position picker: a 3×3 grid without its centre
+    TOAST_POSITIONS: Object.freeze(['top-left', 'top', 'top-right', 'left', 'right', 'bottom-left', 'bottom', 'bottom-right']),
     // history keeps the newest HISTORY_MAX events of EACH kind, so frequent points
     // don't push rare drops and moments out
     HISTORY_MAX: 300,
