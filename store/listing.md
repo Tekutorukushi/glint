@@ -80,11 +80,11 @@ Glint automates claiming Twitch channel rewards (channel points bonus, moments a
 
 ## Перед отправкой
 
-- [ ] `npm test` — все проверки проходят.
+- [x] `npm test` — все проверки проходят.
 - [ ] Версия в `manifest.json` выше, чем у прошлой загруженной.
-- [ ] `npm run pack` — в архиве только `manifest.json`, `_locales`, `icons/*.png`, `src`.
-- [ ] `npm run store` — свежие скриншоты (по 5 на язык).
+- [x] `npm run pack` — в архиве только `manifest.json`, `_locales`, `icons/*.png`, `src`.
+- [x] `npm run store` — свежие скриншоты (по 5 на язык).
 - [x] Политика опубликована: https://github.com/Tekutorukushi/glint/blob/main/PRIVACY.md
-- [ ] Актуальный `PRIVACY.md` отправлен на GitHub (`git push`), ссылка открывается в окне инкогнито.
-- [ ] Последние коммиты отправлены на GitHub (`git push`).
+- [x] Актуальный `PRIVACY.md` отправлен на GitHub (`git push`), ссылка открывается в окне инкогнито.
+- [x] Последние коммиты отправлены на GitHub (`git push`).
 - [ ] Проверено на настоящем Twitch: сундук, моменты, дропы, аватары.
