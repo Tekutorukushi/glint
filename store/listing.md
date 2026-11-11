@@ -11,6 +11,8 @@
 
 **Summary** — тоже из манифеста (`extDescription`, до 132 символов). В кабинете поле серое (не редактируется) и может показываться на одном языке на всех языковых вкладках; посетитель магазина видит его на своём языке (проверка: страница магазина с `?hl=en` и `?hl=ru`). Магазин выводит его прямо над подробным описанием, поэтому подробное не должно начинаться с той же фразы.
 
+**Рекламные изображения** (одни на все языки, `npm run store`): маленькое 440×280 — `tools/out/store/promo-small-440x280.png`, очень большое 1400×560 — `tools/out/store/promo-marquee-1400x560.png`.
+
 **Category:** Entertainment (Развлечения).
 
 **Language:** English (основной), плюс Russian.
@@ -88,7 +90,7 @@ Glint automates claiming Twitch channel rewards (channel points bonus, moments a
 - [x] `npm test` — все проверки проходят.
 - [ ] Версия в `manifest.json` выше, чем у прошлой загруженной.
 - [x] `npm run pack` — в архиве только `manifest.json`, `_locales`, `icons/*.png`, `src`.
-- [x] `npm run store` — свежие скриншоты (по 5 на язык).
+- [x] `npm run store` — свежие скриншоты (по 5 на язык) и два рекламных изображения.
 - [x] Политика опубликована: https://github.com/Tekutorukushi/glint/blob/main/PRIVACY.md
 - [x] Актуальный `PRIVACY.md` отправлен на GitHub (`git push`), ссылка открывается в окне инкогнито.
 - [x] Последние коммиты отправлены на GitHub (`git push`).

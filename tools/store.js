@@ -135,6 +135,41 @@ function frame(img, [title, sub], scheme) {
   </body></html>`;
 }
 
+// Promo tiles for the store: one set for every language, so the only text is the name and
+// the tagline from the manifest. Small 440×280 (home page, categories, search), marquee
+// 1400×560 (the featured carousel), both with the popup's overview on the marquee.
+const ICON = fs.readFileSync(path.join(__dirname, '..', 'icons', 'icon.svg'), 'utf8');
+const TAGLINE = 'Auto Points & Drops for Twitch';
+function promo(kind, img) {
+  const small = kind === 'small';
+  const [w, h] = small ? [440, 280] : [1400, 560];
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      width: ${w}px; height: ${h}px; overflow: hidden; position: relative;
+      background:
+        radial-gradient(${small ? '300px 240px at 24% 50%' : '620px 460px at 72% 55%'}, rgba(217,164,65,.24), transparent 70%),
+        #0F1F1D;
+      color: #ECE7D9; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .lockup {
+      position: absolute; display: flex; align-items: center;
+      ${small ? 'inset: 0; justify-content: center; gap: 22px; padding: 0 28px;' : 'left: 120px; top: 0; bottom: 0; gap: 34px;'}
+    }
+    .lockup svg { flex: none; width: ${small ? 112 : 168}px; height: ${small ? 112 : 168}px; filter: drop-shadow(0 ${small ? 10 : 18}px ${small ? 22 : 40}px rgba(2,10,9,.55)); }
+    .name { font-size: ${small ? 58 : 104}px; font-weight: 750; letter-spacing: -0.03em; line-height: 1; }
+    .tag { margin-top: ${small ? 10 : 18}px; font-size: ${small ? 19 : 32}px; line-height: 1.3; color: #C9B98F; ${small ? 'max-width: 9em; text-wrap: balance;' : 'white-space: nowrap;'} }
+    img {
+      position: absolute; right: 150px; top: 64px; width: 380px; height: auto; border-radius: 22px;
+      box-shadow: 0 0 0 1px rgba(217,164,65,.35), 0 40px 90px rgba(2,10,9,.6);
+    }
+  </style></head><body>
+    <div class="lockup">${ICON}<div><div class="name">Glint</div><div class="tag">${TAGLINE}</div></div></div>
+    ${img ? `<img src="data:image/png;base64,${img}" alt="">` : ''}
+  </body></html>`;
+}
+
 (async () => {
   for (const lang of Object.keys(COPY)) {
     const copy = COPY[lang];
@@ -155,6 +190,16 @@ function frame(img, [title, sub], scheme) {
       const file = path.join(dir, `${i + 1}-${name}.png`);
       await canvas.screenshot({ path: file });
       console.log(file);
+    }
+    if (lang === 'en') {
+      const overview = await popupShot(ctx, id, 'overview', 'dark');
+      for (const [kind, w, h] of [['small', 440, 280], ['marquee', 1400, 560]]) {
+        await canvas.setViewportSize({ width: w, height: h });
+        await canvas.setContent(promo(kind, kind === 'marquee' && overview));
+        const file = path.join(OUT, `promo-${kind}-${w}x${h}.png`);
+        await canvas.screenshot({ path: file });
+        console.log(file);
+      }
     }
     await ctx.close();
   }
