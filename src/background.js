@@ -94,6 +94,24 @@ function recordClaim(claim) {
   return writeChain;
 }
 
+// ---- watch time: stats.channels[name].watch, seconds a stream played ----
+// A tab reports at most this much at once (a minute, plus slack for a slow background tab).
+const WATCH_REPORT_MAX_S = 10 * 60;
+function recordWatch(channel, seconds) {
+  writeChain = writeChain.then(async () => {
+    const { stats = emptyStats() } = await chrome.storage.local.get('stats');
+    const now = Date.now();
+    const c = (stats.channels[channel] = stats.channels[channel] || { points: 0, moments: 0, drops: 0, last: 0 });
+    // Two tabs playing one channel report the same minutes: never credit more than the time
+    // passed since the previous report for that channel.
+    const add = Math.min(seconds, Math.floor((now - (c.watchAt || 0)) / 1000));
+    if (add <= 0) return;
+    c.watch = (c.watch || 0) + add;
+    c.watchAt = now;
+    await chrome.storage.local.set({ stats });
+  }).catch(e => console.error('Glint: failed to record watch time', e));
+}
+
 // ---- channel avatars: storage.local.avatars = { name: {url, at} } ----
 const AVATARS_MAX = 500;
 const AVATAR_REFRESH_MS = 864e5; // a day
@@ -260,6 +278,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const channel = channelFromPath(`/${msg.channel || ''}`);
     const url = GLINT.avatarUrl(msg.url);
     channel && url && recordAvatar(channel, url);
+    return;
+  }
+  if (msg.type === 'watch') {
+    const channel = channelFromPath(`/${msg.channel || ''}`);
+    const seconds = Math.floor(Number(msg.seconds));
+    channel && seconds > 0 && seconds <= WATCH_REPORT_MAX_S && recordWatch(channel, seconds);
     return;
   }
   if (msg.type === 'health' && ISSUES.includes(msg.issue) && ['points', 'moments', 'drops'].includes(msg.kind)) {

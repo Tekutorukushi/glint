@@ -342,6 +342,46 @@
   "searchChannel": {
     "message": "Search channels"
   },
+  "watchTime": {
+    "message": "watched $TIME$",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2 h 15 min"
+      }
+    }
+  },
+  "durMin": {
+    "message": "$N$ min",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "40"
+      }
+    }
+  },
+  "durHour": {
+    "message": "$N$ h",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "120"
+      }
+    }
+  },
+  "durHourMin": {
+    "message": "$H$ h $M$ min",
+    "placeholders": {
+      "h": {
+        "content": "$1",
+        "example": "2"
+      },
+      "m": {
+        "content": "$2",
+        "example": "15"
+      }
+    }
+  },
   "searchHistory": {
     "message": "Search channel or drop"
   },

@@ -26,7 +26,7 @@ What it does
 • Drops: while a stream is open, checks your drops inventory every 15–60 minutes in an invisible frame (no new tabs) and claims what's ready.
 • Player: keeps the stream playing in background tabs, presses "retry" after player errors, skips the mature content warning.
 • Channels: collect everywhere, only on chosen channels, or everywhere except them.
-• Statistics: points today and all time, a 7/14/30-day chart, every channel with search and sorting, a full history of what was collected.
+• Statistics: points today and all time, a 7/14/30-day chart, every channel with watch time, search and sorting, a full history of what was collected.
 • Self-check: if Twitch changes its site and buttons stop working, Glint tells you instead of failing silently.
 • Every automatic feature has its own switch.
 
@@ -47,7 +47,7 @@ Glint сам собирает бонусные баллы каналов на Tw
 • Дропы: пока открыт стрим, раз в 15–60 минут проверяет инвентарь дропов в невидимом фрейме (без новых вкладок) и забирает готовые.
 • Плеер: стрим не встаёт на паузу в фоновой вкладке, после ошибки плеера нажимается «Повторить», предупреждение 18+ пропускается.
 • Каналы: собирать везде, только на выбранных каналах или везде, кроме них.
-• Статистика: баллы за сегодня и за всё время, график за 7, 14 или 30 дней, все каналы с поиском и сортировкой, полная история собранного.
+• Статистика: баллы за сегодня и за всё время, график за 7, 14 или 30 дней, все каналы со временем просмотра, поиском и сортировкой, полная история собранного.
 • Самопроверка: если Twitch изменит сайт и кнопки перестанут нажиматься, Glint сообщит об этом, а не будет молча бездействовать.
 • Каждую автоматическую функцию можно выключить.
 

@@ -14,7 +14,7 @@ const COPY = {
   en: {
     overview: ['Channel points collect themselves', 'Glint claims the bonus chest, moments and drops while a stream is open, even in a background tab.'],
     history: ['Everything you got, in one place', 'Points, moments and drops by day, with a filter by type.'],
-    channels: ['Every channel at a glance', 'Search and sort all the channels you collected on, and open any one\'s history.'],
+    channels: ['Every channel at a glance', 'Every channel you collected on, with how long you watched it. Search, sort, open on Twitch.'],
     settings: ['You decide what runs', 'Pick the channels to collect on, and switch off any automatic feature.'],
     privacy: ['No servers, no analytics', 'Your stats stay in your browser. Glint has no servers of its own and no tracking.'],
     moment: 'First win of the season', drop: 'Golden crate'
@@ -22,7 +22,7 @@ const COPY = {
   ru: {
     overview: ['Баллы канала собираются сами', 'Glint забирает бонусный сундук, моменты и дропы, пока открыт стрим, даже в фоновой вкладке.'],
     history: ['Всё собранное в одном месте', 'Баллы, моменты и дропы по дням, с фильтром по типу.'],
-    channels: ['Все каналы под рукой', 'Поиск и сортировка по всем каналам, где шёл сбор, и история любого из них.'],
+    channels: ['Все каналы под рукой', 'Все каналы, где шёл сбор, и сколько вы их смотрели. Поиск, сортировка, переход на Twitch.'],
     settings: ['Вы решаете, что работает', 'Выберите каналы для сбора, а любую автоматическую функцию можно выключить.'],
     privacy: ['Без серверов и аналитики', 'Статистика хранится только в вашем браузере. Своих серверов и слежки у Glint нет.'],
     moment: 'Первая победа сезона', drop: 'Золотой ящик'
@@ -50,15 +50,15 @@ async function seed(sw, copy) {
     stats.total.drops = 1;
     const now = Date.now();
     Object.assign(stats.channels, {
-      nightowl_plays: { points: 4820, moments: 2, drops: 0, last: now },
-      lunatide: { points: 3150, moments: 1, drops: 0, last: now },
-      brassfox: { points: 1960, moments: 0, drops: 0, last: now },
-      quietriver: { points: 870, moments: 0, drops: 0, last: now - 864e5 },
-      emberline: { points: 640, moments: 1, drops: 0, last: now - 2 * 864e5 },
-      pixelharbor: { points: 520, moments: 0, drops: 0, last: now - 3 * 864e5 },
-      northwind_tv: { points: 410, moments: 0, drops: 0, last: now - 4 * 864e5 },
-      mossgarden: { points: 300, moments: 0, drops: 0, last: now - 6 * 864e5 },
-      copperkettle: { points: 150, moments: 0, drops: 0, last: now - 9 * 864e5 }
+      nightowl_plays: { points: 4820, moments: 2, drops: 0, last: now, watch: 151200 },
+      lunatide: { points: 3150, moments: 1, drops: 0, last: now, watch: 98400 },
+      brassfox: { points: 1960, moments: 0, drops: 0, last: now, watch: 61800 },
+      quietriver: { points: 870, moments: 0, drops: 0, last: now - 864e5, watch: 27000 },
+      emberline: { points: 640, moments: 1, drops: 0, last: now - 2 * 864e5, watch: 20100 },
+      pixelharbor: { points: 520, moments: 0, drops: 0, last: now - 3 * 864e5, watch: 16500 },
+      northwind_tv: { points: 410, moments: 0, drops: 0, last: now - 4 * 864e5, watch: 12600 },
+      mossgarden: { points: 300, moments: 0, drops: 0, last: now - 6 * 864e5, watch: 9300 },
+      copperkettle: { points: 150, moments: 0, drops: 0, last: now - 9 * 864e5, watch: 4500 }
     });
     // "All time" must agree with the channel list (older days are simply not on the chart)
     stats.total.points = Object.values(stats.channels).reduce((s, c) => s + c.points, 0);

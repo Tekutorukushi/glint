@@ -521,17 +521,17 @@
 
   function allChannelEntries() {
     return Object.entries(stats.channels)
-      .map(([name, c]) => ({ name, points: c.points || 0, moments: c.moments || 0, last: c.last || 0 }))
+      .map(([name, c]) => ({ name, points: c.points || 0, moments: c.moments || 0, last: c.last || 0, watch: c.watch || 0 }))
       .filter(c => c.points > 0 || c.moments > 0);
   }
 
-  function whenText(ts) {
-    if (!ts) return '';
-    const k = dayKey(ts);
-    const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(ts);
-    if (k === dayKey()) return `${t('dayToday')}, ${time}`;
-    if (k === dayKey(Date.now() - 864e5)) return `${t('dayYesterday')}, ${time}`;
-    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' }).format(ts);
+  /** "watched 3 h 20 min" from seconds; nothing under a minute (or before 1.6.9 counted it). */
+  function watchText(seconds) {
+    const min = Math.floor(seconds / 60);
+    if (!min) return '';
+    const h = Math.floor(min / 60), m = min % 60;
+    const time = !h ? t('durMin', [fmt(m)]) : m && h < 100 ? t('durHourMin', [fmt(h), String(m)]) : t('durHour', [fmt(h)]);
+    return t('watchTime', [time]);
   }
 
   function renderAllChannels() {
@@ -563,7 +563,7 @@
       const b = document.createElement('b');
       b.textContent = c.name;
       const small = document.createElement('small');
-      small.textContent = [whenText(c.last), c.moments ? t('channelMoments', [fmt(c.moments)]) : '']
+      small.textContent = [watchText(c.watch), c.moments ? t('channelMoments', [fmt(c.moments)]) : '']
         .filter(Boolean).join(' · ');
       what.append(b, small);
       const num = document.createElement('span');

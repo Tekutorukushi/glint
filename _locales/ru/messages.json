@@ -342,6 +342,46 @@
   "searchChannel": {
     "message": "Поиск канала"
   },
+  "watchTime": {
+    "message": "просмотр $TIME$",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2 ч 15 мин"
+      }
+    }
+  },
+  "durMin": {
+    "message": "$N$ мин",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "40"
+      }
+    }
+  },
+  "durHour": {
+    "message": "$N$ ч",
+    "placeholders": {
+      "n": {
+        "content": "$1",
+        "example": "120"
+      }
+    }
+  },
+  "durHourMin": {
+    "message": "$H$ ч $M$ мин",
+    "placeholders": {
+      "h": {
+        "content": "$1",
+        "example": "2"
+      },
+      "m": {
+        "content": "$2",
+        "example": "15"
+      }
+    }
+  },
   "searchHistory": {
     "message": "Поиск по каналу или дропу"
   },

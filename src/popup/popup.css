@@ -340,6 +340,8 @@ body > header, body > .status, body > .notice, body > nav { flex: none; }
 .ch-row .avatar { grid-row: auto; }
 .ch-row .what { min-width: 0; }
 .ch-row .what b { display: block; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a channel without watch time keeps the row height */
+.ch-row .what small:empty::before { content: "\00a0"; }
 .ch-row .what small { display: block; color: var(--ink-3); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ch-row .num { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 

@@ -332,6 +332,34 @@
   ['pointerdown', 'keydown'].forEach(type =>
     document.addEventListener(type, e => { e.isTrusted && (lastUserInput = Date.now()); }, true));
 
+  // ------------------------------------------------------------------ watch time
+  // Time a stream actually played on a channel page (a popout chat has no video), sent to the
+  // background once a minute and when leaving the channel. Background tabs tick about once a
+  // minute, so each step is measured by the clock, capped in case the computer slept.
+  const WATCH_FLUSH_MS = 60e3;
+  const WATCH_STEP_MAX_MS = 2 * 60e3;
+  const watch = { channel: '', at: 0, ms: 0, sentAt: Date.now() };
+  function countWatch() {
+    const now = Date.now();
+    const channel = currentChannel();
+    const playing = !!channel && $$('video').some(v => !v.paused && !v.ended && v.readyState > 2);
+    if (channel !== watch.channel) {
+      flushWatch();
+      watch.channel = channel;
+    } else if (playing && watch.at) {
+      watch.ms += Math.min(now - watch.at, WATCH_STEP_MAX_MS);
+    }
+    watch.at = playing ? now : 0;
+    if (now - watch.sentAt >= WATCH_FLUSH_MS) flushWatch();
+  }
+  function flushWatch() {
+    watch.sentAt = Date.now();
+    const seconds = Math.round(watch.ms / 1000);
+    watch.ms = 0;
+    if (watch.channel && seconds > 0) send({ type: 'watch', channel: watch.channel, seconds });
+  }
+  window.addEventListener('pagehide', () => { alive() && flushWatch(); });
+
   // ------------------------------------------------------------------ self-check
   // If Twitch changes its markup, Glint silently stops finding things. Watch for that:
   // the points block missing while a stream plays, or no bonus chest for a long time.
@@ -429,7 +457,7 @@
   // ------------------------------------------------------------------ loop
   function tick() {
     if (!alive()) return stop();
-    if (!settings.enabled) return;
+    if (!settings.enabled) { watch.at = 0; return; }
     try {
       if (isInventory()) {
         settings.drops && claimDrops();
@@ -444,6 +472,7 @@
       settings.autoRecover && recoverPlayer();
       settings.matureGate && passMatureGate();
       guardVideo();
+      countWatch();
       settings.avatars && collectAvatars();
     } catch (e) {
       console.warn('Glint:', e);

@@ -100,7 +100,7 @@
         .forEach(k => { stats.days[k] = counts(raw.stats.days[k]); });
       Object.entries(isObj(raw.stats.channels) ? raw.stats.channels : {})
         .filter(([name, c]) => channelOk(name) && isObj(c)).slice(0, 5000)
-        .forEach(([name, c]) => { stats.channels[name] = { ...counts(c), last: ts(c.last) }; });
+        .forEach(([name, c]) => { stats.channels[name] = { ...counts(c), last: ts(c.last), watch: num(c.watch) }; });
 
       const history = (Array.isArray(raw.history) ? raw.history : [])
         .filter(h => isObj(h) && KINDS.includes(h.kind) && ts(h.at))

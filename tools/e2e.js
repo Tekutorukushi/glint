@@ -299,7 +299,7 @@ const check = (name, ok, extra = '') => {
     const vals = [820, 1340, 0, 2150, 960, 1780];
     vals.forEach((v, i) => { const k = GLINT.dayKey(Date.now() - (6 - i) * 864e5); stats.days[k] = { points: v, moments: i % 3 === 0 ? 1 : 0, drops: 0 }; stats.total.points += v; });
     const today = GLINT.dayKey(); stats.days[today].points += 1150; stats.total.points += 1150; stats.days[today].moments = 2;
-    Object.assign(stats.channels, { xqc: { points: 3820, moments: 1, drops: 0, last: Date.now() }, kaicenat: { points: 2410, last: Date.now() }, zackrawrr: { points: 1290, last: Date.now() }, jynxzi: { points: 640, last: Date.now() } });
+    Object.assign(stats.channels, { xqc: { points: 3820, moments: 1, drops: 0, last: Date.now() }, kaicenat: { points: 2410, last: Date.now(), watch: 8130 }, zackrawrr: { points: 1290, last: Date.now() }, jynxzi: { points: 640, last: Date.now() } });
     const now = Date.now();
     history.push({ kind: 'moments', channel: 'xqc', amount: 1, title: 'Clutch 1v4', at: now - 3600e3 },
       { kind: 'points', channel: 'kaicenat', amount: 50, at: now - 5400e3 }, { kind: 'points', channel: 'xqc', amount: 50, at: now - 864e5 - 7200e3 },
@@ -438,6 +438,7 @@ const check = (name, ok, extra = '') => {
     await p.waitForTimeout(500);
     const rows = await p.locator('#allChannelList .ch-row').count();
     const firstByPoints = await p.textContent('#allChannelList li:first-child b');
+    const watchLine = await p.textContent('#allChannelList li:nth-child(2) small');
     await p.screenshot({ path: `${out}/all-channels.png` });
     await p.fill('#channelSearch', 'viewer_11');
     const found = await p.locator('#allChannelList .ch-row').count(); // viewer_110..viewer_119
@@ -469,8 +470,8 @@ const check = (name, ok, extra = '') => {
     check('history search: by channel and by title', histOk, `channel=${byChannel.length}, title=${byTitle.length}, none=${none}`);
     check('channels tab: full list, search, 3 sorts, rows link to the channel',
       noLink && title.includes(String(total)) && rows === total && firstByPoints === 'xqc' && found === 10 && nothing &&
-      firstByName === 'jynxzi' && firstRecent !== firstByName && linkOk,
-      `noLink=${noLink}, title="${title}", rows=${rows}/${total}, top=${firstByPoints}, found=${found}, nothing=${nothing}, az=${firstByName}, recent=${firstRecent}, link="${link}"`);
+      firstByName === 'jynxzi' && firstRecent !== firstByName && linkOk && watchLine === 'watched 2 h 15 min',
+      `noLink=${noLink}, title="${title}", rows=${rows}/${total}, top=${firstByPoints}, found=${found}, nothing=${nothing}, az=${firstByName}, recent=${firstRecent}, link="${link}", watch="${watchLine}"`);
   }
 
   // big numbers: from 100 000 on they are shortened (rounded down), exact value on hover
@@ -588,6 +589,33 @@ const check = (name, ok, extra = '') => {
     const stillPaused = await p.evaluate(() => document.getElementById('v').paused);
     await p.close();
     check('a pause in a visible tab is left alone', playing && stillPaused, `playing=${playing}, stillPaused=${stillPaused}`);
+  }
+
+  // watch time: counted only while the video plays, sent when leaving the channel;
+  // two tabs of one channel playing at once count that time once
+  {
+    const watched = () => sw.evaluate(async () => ((await chrome.storage.local.get('stats')).stats.channels.playing || {}).watch || 0);
+    const leave = async p => { await p.goto('https://www.twitch.tv/directory'); await p.waitForTimeout(800); };
+    await sw.evaluate(() => new Promise(r => setTimeout(r, 1500))); // the previous test's tab reports on close
+    const before = await watched();
+    const p = await ctx.newPage();
+    await p.goto('https://www.twitch.tv/playing');
+    await p.waitForTimeout(5000);
+    await p.evaluate(() => document.getElementById('v').pause());
+    await p.waitForTimeout(8000); // paused: these seconds don't count
+    await leave(p);
+    const single = await watched() - before;
+    await sw.evaluate(() => new Promise(r => setTimeout(r, 6000))); // the next report is far from the last one
+    const p2 = await ctx.newPage();
+    await Promise.all([p.goto('https://www.twitch.tv/playing'), p2.goto('https://www.twitch.tv/playing')]);
+    await p.waitForTimeout(6000);
+    await leave(p);
+    await leave(p2);
+    const both = await watched() - before - single;
+    await p.close();
+    await p2.close();
+    check('watch time: counts playing seconds only, two tabs of a channel count once',
+      single >= 3 && single <= 6 && both >= 3 && both <= 8, `single=${single}s, twoTabs=${both}s`);
   }
 
   // stream + popout chat of the same channel: both see the chest go and the balance grow
