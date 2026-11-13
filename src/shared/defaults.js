@@ -133,6 +133,14 @@
 
     emptyStats() {
       return { total: { points: 0, moments: 0, drops: 0 }, days: {}, channels: {} };
+    },
+
+    // Builds an SVG element without parsing markup (no innerHTML): svgEl('path', {d: '…'}, ...children).
+    svgEl(tag, attrs, ...children) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, v);
+      el.append(...children);
+      return el;
     }
   });
 })();

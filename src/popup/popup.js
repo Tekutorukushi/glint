@@ -2,7 +2,7 @@
 /* Glint popup logic. */
 (() => {
   'use strict';
-  const { DEFAULT_SETTINGS, dayKey, emptyStats } = GLINT;
+  const { DEFAULT_SETTINGS, dayKey, emptyStats, svgEl } = GLINT;
   const t = (key, subs) => chrome.i18n.getMessage(key, subs) || key;
   const $ = id => document.getElementById(id);
   const locale = chrome.i18n.getUILanguage();
@@ -296,14 +296,19 @@
   function setExtra(el, moments, drops) {
     const full = t('todayExtra', [fmt(moments || 0), fmt(drops || 0)]);
     el.title = full;
-    el.innerHTML =
-      `<span class="stat" aria-hidden="true"><svg viewBox="5 5 14 14">${ICONS.moments}</svg><span></span></span>` +
-      `<span class="stat" aria-hidden="true"><svg viewBox="5 5 14 14">${ICONS.drops}</svg><span></span></span>` +
-      '<span class="sr-only"></span>';
-    const nums = el.querySelectorAll('.stat > span');
-    nums[0].textContent = fmtShort(moments);
-    nums[1].textContent = fmtShort(drops);
-    el.querySelector('.sr-only').textContent = full;
+    const stat = (kind, value) => {
+      const box = document.createElement('span');
+      box.className = 'stat';
+      box.setAttribute('aria-hidden', 'true');
+      const num = document.createElement('span');
+      num.textContent = fmtShort(value);
+      box.append(svgEl('svg', { viewBox: '5 5 14 14' }, ...iconShapes(kind)), num);
+      return box;
+    };
+    const sr = document.createElement('span');
+    sr.className = 'sr-only';
+    sr.textContent = full;
+    el.replaceChildren(stat('moments', moments), stat('drops', drops), sr);
   }
 
   function renderToday() {
@@ -593,11 +598,16 @@
   });
 
   // ------------------------------------------------------------ history
+  // glyphs of the event kinds, drawn on a 24×24 grid; a fresh set of nodes on every call
   const ICONS = {
-    points: '<path class="mark" d="M12 6.5l1.5 3.6 3.9.3-3 2.5.9 3.8L12 14.6l-3.3 2.1.9-3.8-3-2.5 3.9-.3z"/>',
-    moments: '<rect class="mark" x="7" y="7" width="10" height="10" rx="2"/><circle class="mark" cx="12" cy="12" r="1.6"/>',
-    drops: '<path class="mark" d="M12 6c2.4 3 3.8 5.1 3.8 6.9a3.8 3.8 0 0 1-7.6 0C8.2 11.1 9.6 9 12 6z"/>'
+    points: () => [svgEl('path', { class: 'mark', d: 'M12 6.5l1.5 3.6 3.9.3-3 2.5.9 3.8L12 14.6l-3.3 2.1.9-3.8-3-2.5 3.9-.3z' })],
+    moments: () => [
+      svgEl('rect', { class: 'mark', x: 7, y: 7, width: 10, height: 10, rx: 2 }),
+      svgEl('circle', { class: 'mark', cx: 12, cy: 12, r: 1.6 })
+    ],
+    drops: () => [svgEl('path', { class: 'mark', d: 'M12 6c2.4 3 3.8 5.1 3.8 6.9a3.8 3.8 0 0 1-7.6 0C8.2 11.1 9.6 9 12 6z' })]
   };
+  const iconShapes = kind => (ICONS[kind] ? ICONS[kind]() : []);
 
   function renderHistory() {
     const box = $('historyList');
@@ -624,7 +634,13 @@
       }
       const row = document.createElement('div');
       row.className = 'event';
-      row.innerHTML = `<svg class="kind-icon" viewBox="0 0 24 24" aria-hidden="true"><circle class="face" cx="12" cy="12" r="12"/>${ICONS[h.kind] || ''}</svg><div class="what"><b></b><small></small></div><time></time>`;
+      const what = document.createElement('div');
+      what.className = 'what';
+      what.append(document.createElement('b'), document.createElement('small'));
+      row.append(
+        svgEl('svg', { class: 'kind-icon', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+          svgEl('circle', { class: 'face', cx: 12, cy: 12, r: 12 }), ...iconShapes(h.kind)),
+        what, document.createElement('time'));
       // with a known avatar: the channel's picture, and the event type as a small badge on it
       if (h.channel && settings.avatars && avatars[h.channel]) {
         const pic = document.createElement('span');

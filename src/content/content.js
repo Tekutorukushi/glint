@@ -121,9 +121,15 @@
     const stack = toastHost.shadowRoot.querySelector('.stack');
     const el = document.createElement('div');
     el.className = 'toast';
-    el.innerHTML = `${coinSvg(kind)}<div><div class="title"></div><div class="sub"></div></div>`;
-    el.querySelector('.title').textContent = title;
-    el.querySelector('.sub').textContent = sub || '';
+    const titleEl = document.createElement('div');
+    titleEl.className = 'title';
+    titleEl.textContent = title;
+    const subEl = document.createElement('div');
+    subEl.className = 'sub';
+    subEl.textContent = sub || '';
+    const text = document.createElement('div');
+    text.append(titleEl, subEl);
+    el.append(coinSvg(kind), text);
     stack.appendChild(el);
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
     setTimeout(() => {
@@ -146,13 +152,20 @@
   }
 
   function coinSvg(kind) {
+    const s = GLINT.svgEl;
+    const ink = '#13302C';
     const glyph = {
-      points: '<path d="M14 7.5l1.6 4.1 4.4.3-3.4 2.8 1.1 4.3-3.7-2.4-3.7 2.4 1.1-4.3-3.4-2.8 4.4-.3z" fill="#13302C"/>',
-      moments: '<rect x="9" y="9" width="10" height="10" rx="2" fill="none" stroke="#13302C" stroke-width="2"/><circle cx="14" cy="14" r="2" fill="#13302C"/>',
-      drops: '<path d="M14 7.5c2.6 3.3 4.2 5.6 4.2 7.5a4.2 4.2 0 0 1-8.4 0c0-1.9 1.6-4.2 4.2-7.5z" fill="#13302C"/>'
+      points: () => [s('path', { d: 'M14 7.5l1.6 4.1 4.4.3-3.4 2.8 1.1 4.3-3.7-2.4-3.7 2.4 1.1-4.3-3.4-2.8 4.4-.3z', fill: ink })],
+      moments: () => [
+        s('rect', { x: 9, y: 9, width: 10, height: 10, rx: 2, fill: 'none', stroke: ink, 'stroke-width': 2 }),
+        s('circle', { cx: 14, cy: 14, r: 2, fill: ink })
+      ],
+      drops: () => [s('path', { d: 'M14 7.5c2.6 3.3 4.2 5.6 4.2 7.5a4.2 4.2 0 0 1-8.4 0c0-1.9 1.6-4.2 4.2-7.5z', fill: ink })]
     }[kind];
-    return `<svg class="coin" viewBox="0 0 28 28" aria-hidden="true">
-      <circle cx="14" cy="14" r="13" fill="#D9A441"/><circle cx="14" cy="14" r="10.5" fill="none" stroke="#F3D58B" stroke-width="1"/>${glyph}</svg>`;
+    return s('svg', { class: 'coin', viewBox: '0 0 28 28', 'aria-hidden': 'true' },
+      s('circle', { cx: 14, cy: 14, r: 13, fill: '#D9A441' }),
+      s('circle', { cx: 14, cy: 14, r: 10.5, fill: 'none', stroke: '#F3D58B', 'stroke-width': 1 }),
+      ...(glyph ? glyph() : []));
   }
 
   // ------------------------------------------------------------------ points

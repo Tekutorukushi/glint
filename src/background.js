@@ -1,7 +1,8 @@
 /* © 2026 DENVER. All rights reserved. See LICENSE. */
 /* Glint service worker: records claims, schedules drop checks, badge and notifications. */
 'use strict';
-importScripts('/src/shared/defaults.js');
+// Chrome: service worker loads the shared file itself; Firefox: background.scripts lists it first.
+if (typeof importScripts === 'function') importScripts('/src/shared/defaults.js');
 
 const {
   DEFAULT_SETTINGS, DAYS_MAX, DROPS_INTERVAL_MIN, DROPS_MAX_INTERVAL_MIN, INVENTORY_URL,
